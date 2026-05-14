@@ -33,7 +33,7 @@ A signed JSON registry for MPC custody node admission. Uses EIP-712 v2 typed dat
   },
   "ceremony_config": { "allowed_protocols": ["cmp"], "allowed_curves": ["Secp256k1"] },
   "trusted_infrastructure": { "market_oracle_pubkey": [], "trusted_binary_hashes": [] },
-  "nodes": [{ "node_id": "...", "ik_pub": "...", "ek_pub": "...", "role": "PROVIDER_COSIGNER", "status": "ACTIVE", "enrolled_at": 1710000000 }],
+  "nodes": [{ "node_id": "...", "ik_pub": "...", "role": "PROVIDER_COSIGNER", "status": "ACTIVE", "enrolled_at": 1710000000 }],
   "signatures": [{ "role": "SYSTEM_ADMIN", "signer": "0x...", "signature": "0x..." }]
 }
 ```

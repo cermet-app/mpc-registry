@@ -18,7 +18,7 @@ The MPC wallet needs to know **which nodes are legitimate** before participating
         |  2. Verify document integrity (hash, merkle, chain, role-based signatures)
         |  3. Check ceremony_config, trusted_infrastructure
         |  4. Extract active nodes by role
-        |  5. Use node keys (ik_pub, ek_pub) in MPC ceremonies
+        |  5. Fetch each node's current ephemeral pubkey out-of-band, verified by ik_pub
         |
 ```
 
@@ -67,7 +67,6 @@ The `registry.json` file contains a single `RegistryDocument` with nested sectio
     {
       "node_id":      "sha256-derived-id",
       "ik_pub":       "64-hex-char-identity-key",   // Ed25519 identity public key
-      "ek_pub":       "64-hex-char-ephemeral-key",  // ephemeral public key
       "role":         "USER_COSIGNER",               // USER_COSIGNER | PROVIDER_COSIGNER | RECOVERY_GUARDIAN
       "status":       "ACTIVE",                      // ACTIVE | REVOKED | MAINTENANCE
       "enrolled_at":  1710000000,
@@ -92,6 +91,12 @@ The `registry.json` file contains a single `RegistryDocument` with nested sectio
 | `USER_COSIGNER` | The user's device/key-share holder |
 | `PROVIDER_COSIGNER` | The cloud service's key-share holder |
 | `RECOVERY_GUARDIAN` | Backup signer used for recovery flows |
+
+### Ephemeral Keys (Not in Registry)
+
+The registry stores only `ik_pub` (long-lived identity key, Ed25519). Ephemeral / handshake / pre-key material is **not** stored on-chain in the document because it rotates too frequently to justify a governance-signed version bump.
+
+At ceremony time the wallet fetches each participating node's current ephemeral pubkey out-of-band (HTTPS to the node, gossip, etc.) and verifies it was signed by the node's `ik_pub` before using it for the Diffie–Hellman handshake. This gives forward secrecy on session traffic while keeping the registry slow-changing.
 
 ### Governance Roles
 
@@ -308,7 +313,6 @@ const EIP712_TYPES = {
   NodeRecord: [
     { name: 'node_id',      type: 'string' },
     { name: 'ik_pub',       type: 'string' },
-    { name: 'ek_pub',       type: 'string' },
     { name: 'role',          type: 'string' },
     { name: 'status',        type: 'string' },
     { name: 'enrolled_at',   type: 'uint256' },
@@ -389,7 +393,6 @@ function buildTypedDataValue(doc: RegistryDocument): object {
     nodes: doc.nodes.map(n => ({
       node_id:      n.node_id,
       ik_pub:       n.ik_pub,
-      ek_pub:       n.ek_pub,
       role:         n.role,
       status:       n.status,
       enrolled_at:  n.enrolled_at,
@@ -511,10 +514,15 @@ async function startSigningCeremony(txPayload: any) {
     throw new Error('Missing required cosigners for this wallet');
   }
 
-  // 3. Use ik_pub / ek_pub to establish encrypted channels and run MPC
+  // 3. For each node, fetch its current ephemeral pubkey out-of-band and verify it
+  //    against the node's registry-anchored ik_pub.
+  const userEphem     = await fetchAndVerifyEphemeralPubkey(userNode);
+  const providerEphem = await fetchAndVerifyEphemeralPubkey(providerNode);
+
+  // 4. Establish encrypted channels with the authenticated ephemeral keys.
   const participants = [
-    { node_id: userNode.node_id,     ik_pub: userNode.ik_pub,     ek_pub: userNode.ek_pub },
-    { node_id: providerNode.node_id, ik_pub: providerNode.ik_pub, ek_pub: providerNode.ek_pub },
+    { node_id: userNode.node_id,     ik_pub: userNode.ik_pub,     ek_pub: userEphem },
+    { node_id: providerNode.node_id, ik_pub: providerNode.ik_pub, ek_pub: providerEphem },
   ];
 
   // ... initiate MPC signing protocol with these participants
@@ -743,7 +751,6 @@ type GovernanceRoleName =
 interface NodeRecord {
   node_id:        string;
   ik_pub:         string;
-  ek_pub:         string;
   role:           NodeRole;
   status:         NodeStatus;
   enrolled_at:    number;

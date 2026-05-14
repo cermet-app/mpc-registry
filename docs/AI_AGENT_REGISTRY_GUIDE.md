@@ -118,7 +118,6 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
     {
       "node_id":      "4733ba782088140f...",           // unique ID (SHA-256 derived from ik_pub + role + enrolled_at)
       "ik_pub":       "d75a980182b10ab7...",           // Ed25519/X25519 identity public key (64 hex chars)
-      "ek_pub":       "e86b990182b10ab7...",           // ephemeral public key for key exchange (64 hex chars)
       "role":         "USER_COSIGNER",                 // USER_COSIGNER | PROVIDER_COSIGNER | RECOVERY_GUARDIAN
       "status":       "ACTIVE",                        // ACTIVE | REVOKED | MAINTENANCE
       "enrolled_at":  1774209959,                      // unix timestamp when node was enrolled
@@ -252,6 +251,19 @@ A node's `ik_pub` may change over time. The `ik_rotations[]` array contains the 
 
 **Important:** Always use the current `ik_pub` field, not historical values. The rotation history is for audit purposes.
 
+### Ephemeral Keys Are Out-of-Band
+
+The registry intentionally does **not** store any ephemeral / handshake / pre-key material. Ephemeral keys change frequently (per ceremony or per session) and would otherwise force a governance-quorum-approved version bump every rotation.
+
+Instead, at ceremony time each node serves its current ephemeral pubkey over an authenticated channel — typically a payload signed by the node's `ik_pub` (the long-lived identity key that *is* in the registry). Your agent's flow:
+
+1. Pull the node's `ik_pub` from the verified registry document.
+2. Fetch the node's current ephemeral pubkey from the node itself (e.g. `GET https://node.example/handshake`).
+3. Verify the ephemeral pubkey response is signed by `ik_pub` (Ed25519).
+4. Use that authenticated ephemeral pubkey for the Diffie–Hellman handshake.
+
+This keeps the registry slow-changing and signed by governance, while letting ephemeral material rotate freely.
+
 ---
 
 ## 6. Governance Model
@@ -344,7 +356,6 @@ Binary Merkle tree over sorted nodes:
 | Is document expired? | `Date.now()/1000 > registry_metadata.expires_at` |
 | Active nodes | `nodes.filter(n => n.status === 'ACTIVE')` |
 | Node identity key | `node.ik_pub` (64 hex chars) |
-| Node ephemeral key | `node.ek_pub` (64 hex chars) |
 | Node role | `node.role` (USER_COSIGNER, PROVIDER_COSIGNER, RECOVERY_GUARDIAN) |
 | Allowed protocols | `ceremony_config.allowed_protocols` |
 | Allowed curves | `ceremony_config.allowed_curves` |
@@ -383,7 +394,6 @@ type NodeStatus = 'ACTIVE' | 'REVOKED' | 'MAINTENANCE'
 interface NodeRecord {
   node_id:       string
   ik_pub:        string     // 64 hex chars — Ed25519/X25519 identity public key
-  ek_pub:        string     // 64 hex chars — ephemeral public key
   role:          NodeRole
   status:        NodeStatus
   enrolled_at:   number     // unix timestamp
@@ -461,7 +471,8 @@ BEFORE any MPC ceremony:
   2. Verify: registry_id, expiry, document_hash, merkle_root, signatures, version chain
   3. Extract ACTIVE nodes by role
   4. Enforce ceremony_config (protocol, curve)
-  5. Use node ik_pub/ek_pub for key exchange and ceremony participation
+  5. Use each node's `ik_pub` to verify the ephemeral handshake key it serves at ceremony time
+  5a. Establish encrypted channels with that authenticated ephemeral key
   6. Verify trusted_infrastructure.trusted_binary_hashes if applicable
   7. If consuming an oracle price, check the signer is in trusted_infrastructure.market_oracle_pubkey
 

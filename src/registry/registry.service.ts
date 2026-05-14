@@ -652,7 +652,6 @@ export class RegistryService implements OnModuleInit {
 
   proposeEnroll(body: {
     ik_pub: string
-    ek_pub: string
     role: NodeRole
   }): { node_id: string; draft: RegistryDocument } {
     if (this.draftLocked) {
@@ -664,7 +663,6 @@ export class RegistryService implements OnModuleInit {
 
     // Validate
     if (!/^[0-9a-f]{64}$/i.test(body.ik_pub)) throw new BadRequestException('ik_pub must be 32 bytes (64 hex chars)')
-    if (!/^[0-9a-f]{64}$/i.test(body.ek_pub)) throw new BadRequestException('ek_pub must be 32 bytes (64 hex chars)')
     if (!['USER_COSIGNER', 'PROVIDER_COSIGNER', 'RECOVERY_GUARDIAN'].includes(body.role)) {
       throw new BadRequestException('Invalid role')
     }
@@ -687,7 +685,13 @@ export class RegistryService implements OnModuleInit {
     }
 
     // Add the node
-    const newNode: NodeRecord = { ...body, node_id: nodeId, status: 'ACTIVE', enrolled_at: now }
+    const newNode: NodeRecord = {
+      node_id: nodeId,
+      ik_pub: body.ik_pub,
+      role: body.role,
+      status: 'ACTIVE',
+      enrolled_at: now,
+    }
     this.stagedDraft.nodes.push(newNode)
     this._refreshDraftHash()
 
@@ -881,7 +885,7 @@ export class RegistryService implements OnModuleInit {
       },
       nodes: doc.nodes.map(n => {
         const node: NodeRecord = {
-          node_id: n.node_id, ik_pub: n.ik_pub, ek_pub: n.ek_pub,
+          node_id: n.node_id, ik_pub: n.ik_pub,
           role: n.role, status: n.status, enrolled_at: n.enrolled_at,
         }
         if (n.updated_at) node.updated_at = n.updated_at

@@ -7,3 +7,11 @@ data/*.audit.jsonl
 *.log
 coverage/
 .claude/settings.local.json
+
+# Stale TypeScript compile output that can shadow .ts in src/
+src/**/*.js
+src/**/*.d.ts
+scripts/**/*.js
+scripts/**/*.d.ts
+test/**/*.js
+test/**/*.d.ts

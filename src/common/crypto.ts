@@ -97,7 +97,6 @@ export const EIP712_TYPES = {
   NodeRecord: [
     { name: 'node_id',      type: 'string' },
     { name: 'ik_pub',       type: 'string' },
-    { name: 'ek_pub',       type: 'string' },
     { name: 'role',          type: 'string' },
     { name: 'status',        type: 'string' },
     { name: 'enrolled_at',   type: 'uint256' },
@@ -149,7 +148,6 @@ export function buildTypedDataValue(doc: DocForSigning) {
     nodes: doc.nodes.map(n => ({
       node_id:      n.node_id,
       ik_pub:       n.ik_pub,
-      ek_pub:       n.ek_pub,
       role:          n.role,
       status:        n.status,
       enrolled_at:   n.enrolled_at,

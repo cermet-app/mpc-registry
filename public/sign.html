@@ -264,10 +264,6 @@
           <label>Identity Public Key (ikPub) -- 64 hex chars</label>
           <input id="enroll-ikpub" placeholder="0a1b2c...">
         </div>
-        <div class="form-group">
-          <label>Ephemeral Public Key (ekPub) -- 64 hex chars</label>
-          <input id="enroll-ekpub" placeholder="0a1b2c...">
-        </div>
         <div class="row">
           <div class="form-group">
             <label>Role</label>
@@ -789,18 +785,17 @@
     // ── Enroll ────────────────────────────────────────────────────────────
     async function enrollNode() {
       const ikPub = document.getElementById('enroll-ikpub').value.trim()
-      const ekPub = document.getElementById('enroll-ekpub').value.trim()
       const role = document.getElementById('enroll-role').value
 
-      if (!ikPub || !ekPub) {
-        showMsg('enroll-msg', 'All fields are required', false); return
+      if (!ikPub) {
+        showMsg('enroll-msg', 'ik_pub is required', false); return
       }
 
       try {
         const res = await fetch(`${API}/nodes/enroll`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ik_pub: ikPub, ek_pub: ekPub, role }),
+          body: JSON.stringify({ ik_pub: ikPub, role }),
         })
         const result = await res.json()
         if (res.ok) {
@@ -809,7 +804,6 @@
           showDraftInfo()
           renderNodeListFromDoc(draft)
           document.getElementById('enroll-ikpub').value = ''
-          document.getElementById('enroll-ekpub').value = ''
         } else {
           showMsg('enroll-msg', result.message || 'Failed', false)
         }
@@ -1039,7 +1033,7 @@
             const prevNode = prevNodes.find(p => p.node_id === n.node_id)
             if (!prevNodeIds.includes(n.node_id)) {
               changeBadge = ' <span class="badge badge-ok">NEW</span>'
-            } else if (prevNode && (prevNode.status !== n.status || prevNode.ik_pub !== n.ik_pub || prevNode.ek_pub !== n.ek_pub)) {
+            } else if (prevNode && (prevNode.status !== n.status || prevNode.ik_pub !== n.ik_pub)) {
               changeBadge = ' <span class="badge badge-warning">MODIFIED</span>'
             }
           } else if (isDraft && prevNodeIds === null) {
@@ -1068,7 +1062,6 @@
             <div><strong>${n.role}</strong> <span class="badge ${statusBadgeClass}">${n.status}</span>${changeBadge}</div>
             <div class="mono" style="margin-top:0.25rem; font-size:0.75rem;">ID: ${n.node_id}</div>
             <div class="mono" style="font-size:0.75rem; word-break:break-all;">ikPub: ${n.ik_pub}</div>
-            <div class="mono" style="font-size:0.75rem; word-break:break-all;">ekPub: ${n.ek_pub}</div>
             ${enrolledAt}
             ${rotationHtml}
             ${actions.length ? `<div class="node-actions">${actions.join('')}</div>` : ''}

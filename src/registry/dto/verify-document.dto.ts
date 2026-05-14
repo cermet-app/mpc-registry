@@ -25,9 +25,6 @@ class NodeRecordDto {
   @IsString()
   ik_pub: string
 
-  @IsString()
-  ek_pub: string
-
   @IsIn(['USER_COSIGNER', 'PROVIDER_COSIGNER', 'RECOVERY_GUARDIAN'])
   role: string
 

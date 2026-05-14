@@ -171,7 +171,7 @@ describe('Verify — each failure case', () => {
 
   it('tampered content', async () => {
     const d = await buildDoc()
-    d.nodes = [{ node_id: 'hack', ik_pub: 'a'.repeat(64), ek_pub: 'b'.repeat(64), role: 'RECOVERY_GUARDIAN', status: 'ACTIVE', enrolled_at: 1 }]
+    d.nodes = [{ node_id: 'hack', ik_pub: 'a'.repeat(64), role: 'RECOVERY_GUARDIAN', status: 'ACTIVE', enrolled_at: 1 }]
     const r = await request(app.getHttpServer()).post('/api/registry/verify').send(d)
     expect(r.body.steps.find((s: any) => s.step === 'document_hash').passed).toBe(false)
   })
@@ -215,7 +215,7 @@ describe('Full publish flow', () => {
 
   it('enroll proposes a draft', async () => {
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'a'.repeat(64), ek_pub: 'b'.repeat(64),
+      ik_pub: 'a'.repeat(64),
       role: 'PROVIDER_COSIGNER',
     })
     expect(r.status).toBe(200)
@@ -318,7 +318,7 @@ describe('Security', () => {
   it('draft locked during signing — rejects enroll after sign', async () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'c'.repeat(64), ek_pub: 'd'.repeat(64),
+      ik_pub: 'c'.repeat(64),
       role: 'USER_COSIGNER',
     })
     const pending = (await request(app.getHttpServer()).get('/api/registry/pending')).body
@@ -330,7 +330,7 @@ describe('Security', () => {
       signature: sig,
     })
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'e'.repeat(64), ek_pub: 'f'.repeat(64),
+      ik_pub: 'e'.repeat(64),
       role: 'USER_COSIGNER',
     })
     expect(r.status).toBe(409)
@@ -351,7 +351,7 @@ describe('Security', () => {
     await request(app.getHttpServer()).post('/api/registry/publish').send(signed)
 
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: activeNode.ik_pub, ek_pub: activeNode.ek_pub,
+      ik_pub: activeNode.ik_pub,
       role: activeNode.role,
     })
     expect(r.status).toBe(409)
@@ -386,12 +386,12 @@ describe('Security', () => {
   it('node_id collision check', async () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     const r1 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '1'.repeat(64), ek_pub: '2'.repeat(64),
+      ik_pub: '1'.repeat(64),
       role: 'RECOVERY_GUARDIAN',
     })
     expect(r1.status).toBe(200)
     const r2 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '1'.repeat(64), ek_pub: '3'.repeat(64),
+      ik_pub: '1'.repeat(64),
       role: 'RECOVERY_GUARDIAN',
     })
     expect(r2.status).toBe(409)
@@ -421,7 +421,7 @@ describe('Security', () => {
 
   it('invalid node role — rejects bad role value', async () => {
     const r1 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '5'.repeat(64), ek_pub: '6'.repeat(64),
+      ik_pub: '5'.repeat(64),
       role: 'INVALID_ROLE',
     })
     expect(r1.status).toBe(400)
@@ -451,7 +451,7 @@ describe('Node maintenance and reactivation', () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     // Enroll a new node
     const enrollRes = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '7'.repeat(64), ek_pub: '8'.repeat(64),
+      ik_pub: '7'.repeat(64),
       role: 'USER_COSIGNER',
     })
     expect(enrollRes.status).toBe(200)

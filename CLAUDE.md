@@ -57,7 +57,7 @@ The document is organized into top-level sections:
   - `SYSTEM_ADMIN` requires min 3 addresses, quorum >= 2
 - **`ceremony_config`**: `allowed_protocols[]`, `allowed_curves[]`
 - **`trusted_infrastructure`**: `market_oracle_pubkey[]` (array of Ethereum addresses), `trusted_binary_hashes[]`
-- **`nodes[]`**: NodeRecord with `node_id`, `ik_pub`, `ek_pub`, `role`, `status`, `enrolled_at`, `updated_at`, `revoked_at`, `ik_rotations[]`
+- **`nodes[]`**: NodeRecord with `node_id`, `ik_pub`, `role`, `status`, `enrolled_at`, `updated_at`, `revoked_at`, `ik_rotations[]` (ephemeral keys are NOT stored in the registry — each node serves its current ephemeral pubkey at ceremony time, signed by its `ik_pub`)
 - **`signatures[]`**: `{role, signer, signature}` (RoleSignature)
 
 ### Cryptographic Design

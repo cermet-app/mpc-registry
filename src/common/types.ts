@@ -18,7 +18,6 @@ export interface IkRotationEntry {
 export interface NodeRecord {
   node_id:         string
   ik_pub:          string
-  ek_pub:          string
   role:            NodeRole
   status:          NodeStatus
   enrolled_at:     number
