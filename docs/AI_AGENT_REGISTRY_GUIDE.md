@@ -95,8 +95,6 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
   // Constraints for MPC key-generation and signing ceremonies.
   // Your agent MUST enforce these before initiating any ceremony.
   "ceremony_config": {
-    "global_threshold_t": 2,                           // minimum signers required in any ceremony (t-of-n)
-    "max_participants_n": 9,                           // maximum participants allowed
     "allowed_protocols": ["CGGMP21", "FROST"],           // only these MPC protocols may be used
     "allowed_curves":    ["Secp256k1", "Ed25519"]       // only these elliptic curves may be used
   },
@@ -104,8 +102,9 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
   // ── SECTION 4: Trusted Infrastructure ─────────────────────────────────
   // Addresses and hashes of trusted system components.
   "trusted_infrastructure": {
-    "backoffice_pubkey": "0x5340CCBF...",     // Ethereum address of the backoffice service (or null)
-    "market_oracle_pubkey":      "0x5340CCBF...",     // Ethereum address of the price oracle (or null)
+    "market_oracle_pubkey": [                          // Ethereum addresses of approved price oracles (may be empty)
+      "0x5340CCBF7D4f8B9aB1c2D3E4F5A6B7c8D9e0F1A2"
+    ],
     "trusted_binary_hashes": [                         // SHA-256 hashes of approved node binaries
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd"
@@ -128,15 +127,7 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
     }
   ],
 
-  // ── SECTION 6: Immutable Policies ─────────────────────────────────────
-  // Hard constraints that govern the custody platform's behavior.
-  "immutable_policies": {
-    "max_withdrawal_usd_24h": 50000,                   // maximum USD withdrawal in 24-hour window
-    "require_oracle_price":   true,                    // must fetch oracle price before any transaction
-    "enforce_whitelist":      true                     // only send to whitelisted addresses
-  },
-
-  // ── SECTION 7: Signatures ─────────────────────────────────────────────
+  // ── SECTION 6: Signatures ─────────────────────────────────────────────
   // EIP-712 v2 typed data signatures from governance role members.
   // Each role must meet its quorum. Verified against PREVIOUS version's role addresses.
   "signatures": [
@@ -194,52 +185,24 @@ const recoveryGuardians = activeNodes.filter(n => n.role === 'RECOVERY_GUARDIAN'
 Before initiating ANY MPC ceremony:
 
 ```typescript
-// 1. Check you have enough active nodes
-const activeCount = activeNodes.length
-if (activeCount < doc.ceremony_config.global_threshold_t) {
-  throw new Error(`Need ${doc.ceremony_config.global_threshold_t} nodes, have ${activeCount}`)
-}
-
-// 2. Check protocol is allowed
+// 1. Check protocol is allowed
 if (!doc.ceremony_config.allowed_protocols.includes(selectedProtocol)) {
   throw new Error(`Protocol ${selectedProtocol} not allowed`)
 }
 
-// 3. Check curve is allowed
+// 2. Check curve is allowed
 if (!doc.ceremony_config.allowed_curves.includes(selectedCurve)) {
   throw new Error(`Curve ${selectedCurve} not allowed`)
 }
-
-// 4. Check participant count doesn't exceed max
-if (participantCount > doc.ceremony_config.max_participants_n) {
-  throw new Error(`Too many participants: ${participantCount} > ${doc.ceremony_config.max_participants_n}`)
-}
 ```
 
-### 4.5 — Enforce Immutable Policies
+### 4.5 — Verify Trusted Infrastructure
 
 ```typescript
-// Before any withdrawal/transaction:
-if (withdrawalUsd > doc.immutable_policies.max_withdrawal_usd_24h) {
-  throw new Error(`Withdrawal $${withdrawalUsd} exceeds 24h limit $${doc.immutable_policies.max_withdrawal_usd_24h}`)
-}
-
-if (doc.immutable_policies.require_oracle_price) {
-  const price = await fetchOraclePrice(doc.trusted_infrastructure.market_oracle_pubkey)
-  // ... use oracle price for conversion
-}
-
-if (doc.immutable_policies.enforce_whitelist && !isWhitelisted(destinationAddress)) {
-  throw new Error('Destination not in whitelist')
-}
-```
-
-### 4.6 — Verify Trusted Infrastructure
-
-```typescript
-// Before connecting to backoffice service:
-if (doc.trusted_infrastructure.backoffice_pubkey) {
-  // Verify the backoffice service identity matches this address
+// Before trusting a price oracle response, check it was signed by an approved oracle:
+const approvedOracles = doc.trusted_infrastructure.market_oracle_pubkey
+if (approvedOracles.length > 0 && !approvedOracles.includes(oracleSigner)) {
+  throw new Error(`Oracle ${oracleSigner} not in approved list`)
 }
 
 // Before accepting a binary update:
@@ -383,15 +346,9 @@ Binary Merkle tree over sorted nodes:
 | Node identity key | `node.ik_pub` (64 hex chars) |
 | Node ephemeral key | `node.ek_pub` (64 hex chars) |
 | Node role | `node.role` (USER_COSIGNER, PROVIDER_COSIGNER, RECOVERY_GUARDIAN) |
-| MPC threshold | `ceremony_config.global_threshold_t` |
-| Max participants | `ceremony_config.max_participants_n` |
 | Allowed protocols | `ceremony_config.allowed_protocols` |
 | Allowed curves | `ceremony_config.allowed_curves` |
-| Withdrawal limit | `immutable_policies.max_withdrawal_usd_24h` |
-| Oracle required? | `immutable_policies.require_oracle_price` |
-| Whitelist enforced? | `immutable_policies.enforce_whitelist` |
-| Oracle address | `trusted_infrastructure.market_oracle_pubkey` |
-| Backoffice address | `trusted_infrastructure.backoffice_pubkey` |
+| Approved oracle addresses | `trusted_infrastructure.market_oracle_pubkey` (string[]) |
 | Approved binaries | `trusted_infrastructure.trusted_binary_hashes` |
 | Governance roles | `governance.roles` |
 | Fetch URL | `registry_metadata.endpoints.primary` |
@@ -469,22 +426,13 @@ interface RegistryMetadata {
 }
 
 interface CeremonyConfig {
-  global_threshold_t: number
-  max_participants_n: number
   allowed_protocols:  string[]
   allowed_curves:     string[]
 }
 
 interface TrustedInfrastructure {
-  backoffice_pubkey: string | null
-  market_oracle_pubkey:      string | null
+  market_oracle_pubkey:       string[]
   trusted_binary_hashes:      string[]
-}
-
-interface ImmutablePolicies {
-  max_withdrawal_usd_24h: number
-  require_oracle_price:   boolean
-  enforce_whitelist:       boolean
 }
 
 interface RoleSignature {
@@ -499,7 +447,6 @@ interface RegistryDocument {
   ceremony_config:        CeremonyConfig
   trusted_infrastructure: TrustedInfrastructure
   nodes:                  NodeRecord[]
-  immutable_policies:     ImmutablePolicies
   signatures:             RoleSignature[]
 }
 ```
@@ -513,10 +460,10 @@ BEFORE any MPC ceremony:
   1. Fetch registry.json (primary → mirrors → cache)
   2. Verify: registry_id, expiry, document_hash, merkle_root, signatures, version chain
   3. Extract ACTIVE nodes by role
-  4. Enforce ceremony_config (threshold, protocol, curve, max participants)
-  5. Enforce immutable_policies (withdrawal limit, oracle, whitelist)
-  6. Use node ik_pub/ek_pub for key exchange and ceremony participation
-  7. Verify trusted_infrastructure.trusted_binary_hashes if applicable
+  4. Enforce ceremony_config (protocol, curve)
+  5. Use node ik_pub/ek_pub for key exchange and ceremony participation
+  6. Verify trusted_infrastructure.trusted_binary_hashes if applicable
+  7. If consuming an oracle price, check the signer is in trusted_infrastructure.market_oracle_pubkey
 
 NEVER:
   - Use a node with status REVOKED or MAINTENANCE
@@ -524,7 +471,4 @@ NEVER:
   - Accept a document that fails any verification step
   - Skip signature verification
   - Use protocols or curves not in ceremony_config
-  - Exceed max_withdrawal_usd_24h
-  - Skip oracle price check if require_oracle_price is true
-  - Send to non-whitelisted addresses if enforce_whitelist is true
 ```

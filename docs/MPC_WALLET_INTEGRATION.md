@@ -16,7 +16,7 @@ The MPC wallet needs to know **which nodes are legitimate** before participating
         |
         |  1. Fetch registry.json (primary URL or mirrors)
         |  2. Verify document integrity (hash, merkle, chain, role-based signatures)
-        |  3. Check ceremony_config, trusted_infrastructure, immutable_policies
+        |  3. Check ceremony_config, trusted_infrastructure
         |  4. Extract active nodes by role
         |  5. Use node keys (ik_pub, ek_pub) in MPC ceremonies
         |
@@ -56,15 +56,12 @@ The `registry.json` file contains a single `RegistryDocument` with nested sectio
     ]
   },
   "ceremony_config": {
-    "global_threshold_t":   2,                     // minimum signers required (>= 2)
-    "max_participants_n":   3,                     // maximum ceremony participants
     "allowed_protocols":    ["cmp"],               // MPC protocols allowed
     "allowed_curves":       ["Secp256k1"]          // elliptic curves allowed
   },
   "trusted_infrastructure": {
-    "backoffice_pubkey": "0xAbc...",       // Ethereum address (or null)
-    "market_oracle_pubkey":     "0xDef...",        // Ethereum address (or null)
-    "trusted_binary_hashes":     ["sha256-hex..."]  // hashes of trusted binaries
+    "market_oracle_pubkey":     ["0xDef..."],      // array of approved oracle Ethereum addresses
+    "trusted_binary_hashes":    ["sha256-hex..."]  // hashes of trusted binaries
   },
   "nodes": [
     {
@@ -78,11 +75,6 @@ The `registry.json` file contains a single `RegistryDocument` with nested sectio
       "revoked_at":   null
     }
   ],
-  "immutable_policies": {
-    "max_withdrawal_usd_24h": 1000000,             // max withdrawal per 24h in USD
-    "require_oracle_price":   true,                // require oracle price feed
-    "enforce_whitelist":      true                 // enforce address whitelist
-  },
   "signatures": [
     {
       "role":      "SYSTEM_ADMIN",                 // governance role name
@@ -120,8 +112,6 @@ The `registry_metadata.endpoints` object tells clients where to fetch the regist
 ### Ceremony Config
 
 The `ceremony_config` object controls which cryptographic parameters are allowed for MPC ceremonies:
-- `global_threshold_t` -- minimum number of signers required (>= 2)
-- `max_participants_n` -- maximum number of ceremony participants
 - `allowed_protocols` -- list of allowed MPC protocols (e.g. `["cmp"]`)
 - `allowed_curves` -- list of allowed elliptic curves (e.g. `["Secp256k1"]`)
 - The entire `ceremony_config` object is covered by the document hash and role-based signatures, so changes require multi-role quorum approval
@@ -129,16 +119,8 @@ The `ceremony_config` object controls which cryptographic parameters are allowed
 ### Trusted Infrastructure
 
 The `trusted_infrastructure` section contains addresses and hashes for infrastructure components:
-- `backoffice_pubkey` -- Ethereum address for the backoffice service (or null)
-- `market_oracle_pubkey` -- Ethereum address for the market oracle (or null)
+- `market_oracle_pubkey` -- array of Ethereum addresses for approved price oracles (may be empty)
 - `trusted_binary_hashes` -- SHA-256 hashes of trusted node binaries
-
-### Immutable Policies
-
-The `immutable_policies` section contains policies that are set at genesis:
-- `max_withdrawal_usd_24h` -- maximum withdrawal amount per 24 hours in USD
-- `require_oracle_price` -- whether oracle price feed is required
-- `enforce_whitelist` -- whether address whitelist is enforced
 
 ---
 
@@ -213,7 +195,7 @@ import { ethers } from 'ethers';
 function checkStructure(doc: any): void {
   const requiredSections = [
     'registry_metadata', 'governance', 'ceremony_config',
-    'trusted_infrastructure', 'nodes', 'immutable_policies', 'signatures',
+    'trusted_infrastructure', 'nodes', 'signatures',
   ];
   const missing = requiredSections.filter(f => doc[f] === undefined);
   if (missing.length) throw new Error(`Missing sections: ${missing.join(', ')}`);
@@ -316,14 +298,11 @@ const EIP712_TYPES = {
     { name: 'features_json', type: 'string' },
   ],
   CeremonyConfig: [
-    { name: 'global_threshold_t',  type: 'uint256' },
-    { name: 'max_participants_n',  type: 'uint256' },
     { name: 'allowed_protocols',   type: 'string[]' },
     { name: 'allowed_curves',      type: 'string[]' },
   ],
   TrustedInfrastructure: [
-    { name: 'backoffice_pubkey', type: 'string' },
-    { name: 'market_oracle_pubkey',      type: 'string' },
+    { name: 'market_oracle_pubkey',      type: 'string[]' },
     { name: 'trusted_binary_hashes',      type: 'string[]' },
   ],
   NodeRecord: [
@@ -336,18 +315,12 @@ const EIP712_TYPES = {
     { name: 'updated_at',    type: 'uint256' },
     { name: 'revoked_at',    type: 'uint256' },
   ],
-  ImmutablePolicies: [
-    { name: 'max_withdrawal_usd_24h', type: 'uint256' },
-    { name: 'require_oracle_price',   type: 'bool' },
-    { name: 'enforce_whitelist',       type: 'bool' },
-  ],
   RegistryDocument: [
     { name: 'registry_metadata',      type: 'RegistryMetadata' },
     { name: 'governance',             type: 'GovernanceRole[]' },
     { name: 'ceremony_config',        type: 'CeremonyConfig' },
     { name: 'trusted_infrastructure', type: 'TrustedInfrastructure' },
     { name: 'nodes',                  type: 'NodeRecord[]' },
-    { name: 'immutable_policies',     type: 'ImmutablePolicies' },
   ],
 };
 
@@ -406,14 +379,11 @@ function buildTypedDataValue(doc: RegistryDocument): object {
       features_json: JSON.stringify(r.features ?? {}),
     })),
     ceremony_config: {
-      global_threshold_t:  doc.ceremony_config.global_threshold_t,
-      max_participants_n:  doc.ceremony_config.max_participants_n,
       allowed_protocols:   doc.ceremony_config.allowed_protocols,
       allowed_curves:      doc.ceremony_config.allowed_curves,
     },
     trusted_infrastructure: {
-      backoffice_pubkey: doc.trusted_infrastructure.backoffice_pubkey ?? '',
-      market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? '',
+      market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? [],
       trusted_binary_hashes:      doc.trusted_infrastructure.trusted_binary_hashes,
     },
     nodes: doc.nodes.map(n => ({
@@ -426,11 +396,6 @@ function buildTypedDataValue(doc: RegistryDocument): object {
       updated_at:   n.updated_at ?? 0,
       revoked_at:   n.revoked_at ?? 0,
     })),
-    immutable_policies: {
-      max_withdrawal_usd_24h: doc.immutable_policies.max_withdrawal_usd_24h,
-      require_oracle_price:   doc.immutable_policies.require_oracle_price,
-      enforce_whitelist:       doc.immutable_policies.enforce_whitelist,
-    },
   };
 }
 
@@ -438,9 +403,6 @@ function buildTypedDataValue(doc: RegistryDocument): object {
 function checkCeremonyConfig(doc: RegistryDocument): void {
   const cc = doc.ceremony_config;
   if (!cc) throw new Error('ceremony_config is required');
-  if (!Number.isInteger(cc.global_threshold_t) || cc.global_threshold_t < 2) {
-    throw new Error('global_threshold_t must be >= 2');
-  }
   if (!Array.isArray(cc.allowed_curves) || cc.allowed_curves.length === 0) {
     throw new Error('allowed_curves must be a non-empty array');
   }
@@ -469,32 +431,19 @@ function checkEndpoints(doc: RegistryDocument): void {
   }
 }
 
-// -- Step 8: Immutable policies check --------------------------------------
-function checkImmutablePolicies(doc: RegistryDocument): void {
-  const ip = doc.immutable_policies;
-  if (!ip) throw new Error('immutable_policies is required');
-  if (typeof ip.max_withdrawal_usd_24h !== 'number' || ip.max_withdrawal_usd_24h <= 0) {
-    throw new Error('max_withdrawal_usd_24h must be a positive number');
-  }
-  if (typeof ip.require_oracle_price !== 'boolean') {
-    throw new Error('require_oracle_price must be a boolean');
-  }
-  if (typeof ip.enforce_whitelist !== 'boolean') {
-    throw new Error('enforce_whitelist must be a boolean');
-  }
-}
-
-// -- Step 9: Trusted infrastructure check ----------------------------------
+// -- Step 8: Trusted infrastructure check ----------------------------------
 function checkTrustedInfrastructure(doc: RegistryDocument): void {
   const ti = doc.trusted_infrastructure;
   if (!ti) throw new Error('trusted_infrastructure is required');
 
   const hexPattern = /^0x[0-9a-fA-F]{40}$/;
-  if (ti.backoffice_pubkey && !hexPattern.test(ti.backoffice_pubkey)) {
-    throw new Error('Invalid backoffice_pubkey format');
+  if (!Array.isArray(ti.market_oracle_pubkey)) {
+    throw new Error('market_oracle_pubkey must be an array');
   }
-  if (ti.market_oracle_pubkey && !hexPattern.test(ti.market_oracle_pubkey)) {
-    throw new Error('Invalid market_oracle_pubkey format');
+  for (const addr of ti.market_oracle_pubkey) {
+    if (!hexPattern.test(addr)) {
+      throw new Error(`Invalid market_oracle_pubkey entry: ${addr}`);
+    }
   }
   for (const hash of ti.trusted_binary_hashes) {
     if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
@@ -515,7 +464,6 @@ function verifyRegistry(doc: RegistryDocument, trustedRoles: GovernanceRole[]): 
   checkSignatures(doc, trustedRoles);
   checkCeremonyConfig(doc);
   checkEndpoints(doc);
-  checkImmutablePolicies(doc);
   checkTrustedInfrastructure(doc);
   // All checks passed -- document is authentic and untampered
 }
@@ -546,16 +494,7 @@ function getNodesByRole(
 }
 ```
 
-### 5.3 -- Check Threshold Before Ceremony
-
-```typescript
-function canStartCeremony(doc: RegistryDocument): boolean {
-  const activeNodes = getActiveNodes(doc);
-  return activeNodes.length >= doc.ceremony_config.global_threshold_t;
-}
-```
-
-### 5.4 -- MPC Ceremony Integration
+### 5.3 -- MPC Ceremony Integration
 
 ```typescript
 async function startSigningCeremony(txPayload: any) {
@@ -564,12 +503,7 @@ async function startSigningCeremony(txPayload: any) {
   const trustedRoles = getTrustedRoles(); // from cached previous version or genesis
   verifyRegistry(registry, trustedRoles);
 
-  // 2. Check threshold
-  if (!canStartCeremony(registry)) {
-    throw new Error(`Not enough active nodes (need ${registry.ceremony_config.global_threshold_t})`);
-  }
-
-  // 3. Resolve the signing quorum
+  // 2. Resolve the signing quorum
   const userNode     = getNodesByRole(registry, 'USER_COSIGNER')[0];
   const providerNode = getNodesByRole(registry, 'PROVIDER_COSIGNER')[0];
 
@@ -577,7 +511,7 @@ async function startSigningCeremony(txPayload: any) {
     throw new Error('Missing required cosigners for this wallet');
   }
 
-  // 4. Use ik_pub / ek_pub to establish encrypted channels and run MPC
+  // 3. Use ik_pub / ek_pub to establish encrypted channels and run MPC
   const participants = [
     { node_id: userNode.node_id,     ik_pub: userNode.ik_pub,     ek_pub: userNode.ek_pub },
     { node_id: providerNode.node_id, ik_pub: providerNode.ik_pub, ek_pub: providerNode.ek_pub },
@@ -587,24 +521,16 @@ async function startSigningCeremony(txPayload: any) {
 }
 ```
 
-### 5.5 -- Using Trusted Infrastructure Addresses
+### 5.4 -- Using Approved Oracle Addresses
 
 ```typescript
-function getBackofficeAddress(doc: RegistryDocument): string | null {
-  return doc.trusted_infrastructure.backoffice_pubkey;
-}
-
-function getMarketOracleAddress(doc: RegistryDocument): string | null {
+function getApprovedOracles(doc: RegistryDocument): string[] {
   return doc.trusted_infrastructure.market_oracle_pubkey;
 }
 
-// Use for establishing authenticated communication with infrastructure services
-async function connectToBackoffice(doc: RegistryDocument) {
-  const address = getBackofficeAddress(doc);
-  if (!address) throw new Error('No backoffice service address configured');
-
-  // Use address for authentication or signature verification with backoffice
-  // ...
+function isApprovedOracle(doc: RegistryDocument, signerAddress: string): boolean {
+  const approved = getApprovedOracles(doc).map(a => a.toLowerCase());
+  return approved.includes(signerAddress.toLowerCase());
 }
 ```
 
@@ -760,9 +686,7 @@ async function syncRegistry(
 | **Man-in-the-middle** | HTTPS + EIP-712 v2 signature verification. Endpoints are signed in the document. |
 | **Node key rotation** | When a node is revoked, its `status` changes to `REVOKED`. Nodes under maintenance have `MAINTENANCE` status. Always filter for `ACTIVE` nodes. |
 | **Endpoint tampering** | Endpoint URLs are covered by the document hash and role-based signatures. Changing them requires multi-role quorum approval. |
-| **Insufficient quorum** | `ceremony_config.global_threshold_t` validation ensures you have enough active nodes before starting MPC ceremonies. |
 | **Missed governance rotation** | Version chain walk recovers automatically -- no manual intervention needed. Fetch intermediate versions from `data/versions/` and replay trust transitions. |
-| **Immutable policy violation** | `immutable_policies` are validated and covered by the document hash. |
 | **Infrastructure spoofing** | `trusted_infrastructure` addresses are signed into the document. |
 
 ### Trust Root Summary
@@ -781,10 +705,9 @@ Each version's signatures cover:
   +-- document_hash (SHA-256 integrity of all fields)
         +-- registry_metadata (version, expiry, merkle_root, endpoints)
         +-- governance.roles (role addresses and quorums)
-        +-- ceremony_config (threshold, protocols, curves)
-        +-- trusted_infrastructure (backoffice, oracle, binary hashes)
+        +-- ceremony_config (protocols, curves)
+        +-- trusted_infrastructure (oracle addresses, binary hashes)
         +-- nodes[] (Merkle root integrity)
-        +-- immutable_policies (withdrawal limits, oracle, whitelist)
 ```
 
 ---
@@ -867,22 +790,13 @@ interface RegistryMetadata {
 }
 
 interface CeremonyConfig {
-  global_threshold_t:   number;
-  max_participants_n:   number;
   allowed_protocols:    string[];
   allowed_curves:       string[];
 }
 
 interface TrustedInfrastructure {
-  backoffice_pubkey: string | null;
-  market_oracle_pubkey:      string | null;
+  market_oracle_pubkey:       string[];
   trusted_binary_hashes:      string[];
-}
-
-interface ImmutablePolicies {
-  max_withdrawal_usd_24h: number;
-  require_oracle_price:   boolean;
-  enforce_whitelist:       boolean;
 }
 
 interface RoleSignature {
@@ -897,7 +811,6 @@ interface RegistryDocument {
   ceremony_config:        CeremonyConfig;
   trusted_infrastructure: TrustedInfrastructure;
   nodes:                  NodeRecord[];
-  immutable_policies:     ImmutablePolicies;
   signatures:             RoleSignature[];
 }
 
@@ -933,8 +846,7 @@ interface HighWaterMark {
 | `POST` | `/api/registry/ceremony-config/propose` | Propose ceremony configuration |
 | `POST` | `/api/registry/infrastructure/propose` | Propose trusted infrastructure changes |
 | `POST` | `/api/registry/endpoints/propose` | Propose endpoint URLs |
-| `POST` | `/api/registry/immutable-policies/propose` | Propose immutable policies |
-| `POST` | `/api/registry/verify` | Verify a document (12-step pipeline) |
+| `POST` | `/api/registry/verify` | Verify a document (11-step pipeline) |
 | `POST` | `/api/registry/publish` | Publish signed document |
 | `GET` | `/api/registry/versions` | List available version numbers |
 | `GET` | `/api/registry/versions/:v` | Get a specific historical version |

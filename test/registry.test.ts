@@ -79,22 +79,14 @@ async function buildDoc(overrides: Record<string, any> = {}): Promise<RegistryDo
       }],
     },
     ceremony_config: {
-      global_threshold_t: 2,
-      max_participants_n: 9,
       allowed_protocols: ['CGGMP21', 'FROST'],
       allowed_curves: ['Secp256k1', 'Ed25519'],
     },
     trusted_infrastructure: {
-      backoffice_pubkey: null,
-      market_oracle_pubkey: null,
+      market_oracle_pubkey: [],
       trusted_binary_hashes: [],
     },
     nodes: [],
-    immutable_policies: {
-      max_withdrawal_usd_24h: 100000,
-      require_oracle_price: true,
-      enforce_whitelist: true,
-    },
   }
 
   // Apply overrides (shallow merge into nested sections)
@@ -105,7 +97,6 @@ async function buildDoc(overrides: Record<string, any> = {}): Promise<RegistryDo
   if (overrides.ceremony_config) u.ceremony_config = overrides.ceremony_config
   if (overrides.trusted_infrastructure) u.trusted_infrastructure = overrides.trusted_infrastructure
   if (overrides.nodes) u.nodes = overrides.nodes
-  if (overrides.immutable_policies) u.immutable_policies = overrides.immutable_policies
 
   // Recompute merkle root and document hash
   u.registry_metadata.merkle_root = computeMerkleRoot(u.nodes)
@@ -155,10 +146,9 @@ describe('Verify — each failure case', () => {
         updated_at: '', endpoints: null,
       },
       governance: { roles: [] },
-      ceremony_config: { global_threshold_t: 2, max_participants_n: 9, allowed_protocols: ['CGGMP21'], allowed_curves: ['Secp256k1'] },
-      trusted_infrastructure: { backoffice_pubkey: null, market_oracle_pubkey: null, trusted_binary_hashes: [] },
+      ceremony_config: { allowed_protocols: ['CGGMP21'], allowed_curves: ['Secp256k1'] },
+      trusted_infrastructure: { market_oracle_pubkey: [], trusted_binary_hashes: [] },
       nodes: [],
-      immutable_policies: { max_withdrawal_usd_24h: 50000, require_oracle_price: true, enforce_whitelist: true },
       signatures: [],
     })
     expect(r.status).toBe(200)

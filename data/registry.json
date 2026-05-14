@@ -1,17 +1,14 @@
 {
   "registry_metadata": {
     "registry_id": "custody-wallet",
-    "version": 2,
-    "issued_at": 1774385091,
-    "expires_at": 1774989891,
-    "updated_at": "2026-03-24T20:44:51.478Z",
-    "document_hash": "a1a6860f42087400073bffdedad523abc3fe7b744dad58e566c0edd60b1f24ca",
-    "merkle_root": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d",
-    "prev_document_hash": "8d3731179a217c73a546996bd355bc43ea5528245ae68fddc5fca37e8b9b7161",
-    "endpoints": {
-      "primary": "https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data/registry.json",
-      "mirrors": []
-    }
+    "version": 1,
+    "issued_at": 1778789568,
+    "expires_at": 1779394368,
+    "updated_at": "2026-05-14T20:12:48.162Z",
+    "document_hash": "c8c16746d38efcc6eda8e5e54564f28f312bdc83d29c8c0c7412599ea3e70fbe",
+    "merkle_root": "1d910055cb29d9b09ddf245d26b7e6d9485ed11f468494cdfe8d814009bc1c0a",
+    "prev_document_hash": null,
+    "endpoints": null
   },
   "governance": {
     "roles": [
@@ -29,8 +26,6 @@
     ]
   },
   "ceremony_config": {
-    "global_threshold_t": 2,
-    "max_participants_n": 9,
     "allowed_protocols": [
       "CGGMP21",
       "FROST"
@@ -41,26 +36,45 @@
     ]
   },
   "trusted_infrastructure": {
-    "backoffice_pubkey": null,
-    "market_oracle_pubkey": null,
+    "market_oracle_pubkey": [],
     "trusted_binary_hashes": []
   },
-  "nodes": [],
-  "immutable_policies": {
-    "max_withdrawal_usd_24h": 50000,
-    "require_oracle_price": true,
-    "enforce_whitelist": true
-  },
+  "nodes": [
+    {
+      "node_id": "026c283834af1ff07b92d4bfcb61c5e85e8a0d7e749f05975c5edb31b7a1c74a",
+      "ik_pub": "d3abf5fd8b5ba7349182c48228ea59ed3f5877f726f83764c5cd8afe87b84dd8",
+      "ek_pub": "14b33fbbe87db610c37244dffe3d81ebc6771d5b5e9e841d209b8acd5d785d68",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778789684
+    },
+    {
+      "node_id": "5ed5e0587298938a6d0e2b07391488fe43c92dcae4647bba7057b867e386e393",
+      "ik_pub": "d0c347c2503e2463b41a3fb3d4df7762e2a293b5edae9fdae74da333e8109d79",
+      "ek_pub": "1f6fa7be28135e4a64ac64979a6935a1ebc1466e7ff417a2dd3d3af1381f1d00",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778789694
+    },
+    {
+      "node_id": "f18527ea23ce5c01b13b340189c35bbe21045a74492f3424ce34da4ffcc4d126",
+      "ik_pub": "69dd7bdb0304b1974007caa28453051de5e1f921368f01546f20449c43cd1adc",
+      "ek_pub": "2c120b8e270f5b3d31c53706a40a41d65eb60cd84924a28f4ee0f9d8701be719",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778789705
+    }
+  ],
   "signatures": [
     {
       "role": "SYSTEM_ADMIN",
       "signer": "0x3f1707fdaf87ee42f9d53fe0af2fd96995a80059",
-      "signature": "0x3ae159fa82f65005132797ccd6d03b23b8816a3adf7a78be29d7228a8ac8e31b4449d9dd99ec07d06c92be3018297747f16e265d02eccb46573d8624a71bc58a1c"
+      "signature": "0x82f8bdd19ac5ca8090e1e3acfffea3210440694d6efee6b6e40f2c229bcfa2fb2a710fd4c1cf12aa529426444dcd5926cd2a5ab8791b29c0f5a4a2088deb05741b"
     },
     {
       "role": "SYSTEM_ADMIN",
       "signer": "0x9140c30772d963fe04f64d2c8d2454cf67a9ab48",
-      "signature": "0x9e170dda7e486ab5e2dc42f22ef478c5dd87b4acfd852838d645ee82401fe08e09fbe63023ecf66d8afe3581bcdb68eeb6d5e2ce7fa230f1d8550bb7d941a0891b"
+      "signature": "0xb6daa6fdca9abab41575743dedf9544f199fbfc997402f08e0860caa8224aa7f31aedb11681177c1035dd3efb33e28613ef8512cd61253e74ca200f5ecc6b5a61b"
     }
   ]
 }

@@ -144,7 +144,6 @@
     <div class="hidden" id="cur-governance"></div>
     <div class="hidden" id="cur-ceremony-config"></div>
     <div class="hidden" id="cur-infrastructure"></div>
-    <div class="hidden" id="cur-immutable-policies"></div>
     <div class="hidden" id="cur-endpoints"></div>
     <div class="hidden" id="mgmt-draft-governance"></div>
     <div class="hidden" id="mgmt-draft-ceremony-config"></div>
@@ -203,20 +202,9 @@
         <p style="font-size:0.85rem; color:#8b949e; margin-bottom:0.75rem;">
           Configure trusted infrastructure addresses and binary hashes.
         </p>
-        <div class="form-group">
-          <label>Backoffice Service Address (optional)</label>
-          <input id="infra-backoffice" placeholder="0x...">
-        </div>
-        <div class="form-group">
-          <label>Market Oracle Address (optional)</label>
-          <input id="infra-oracle" placeholder="0x...">
-        </div>
-        <div id="infra-hash-inputs">
-          <div class="form-group">
-            <label>Trusted Binary Hash 0</label>
-            <input class="infra-hash-input" placeholder="sha256 hex hash">
-          </div>
-        </div>
+        <div id="infra-oracle-inputs"></div>
+        <button class="secondary" onclick="addInfraOracleInput()">+ Add Oracle Address</button>
+        <div id="infra-hash-inputs"></div>
         <button class="secondary" onclick="addInfraHashInput()">+ Add Hash</button>
         <button class="purple" onclick="proposeInfrastructure()">Propose Infrastructure</button>
         <div id="infrastructure-msg"></div>
@@ -234,14 +222,6 @@
           Configure MPC ceremony parameters.
         </p>
         <div class="form-group">
-          <label>Global Threshold (t)</label>
-          <input id="cc-global-threshold" type="number" min="2" value="2">
-        </div>
-        <div class="form-group">
-          <label>Max Participants (n)</label>
-          <input id="cc-max-participants" type="number" min="2" value="9">
-        </div>
-        <div class="form-group">
           <label>Allowed Curves (comma-separated)</label>
           <input id="cc-curves" placeholder="Secp256k1, Ed25519" value="Secp256k1, Ed25519">
         </div>
@@ -251,28 +231,6 @@
         </div>
         <button class="purple" onclick="proposeCeremonyConfig()">Propose Config</button>
         <div id="ceremony-config-msg"></div>
-      </div>
-
-      <!-- Immutable Policies -->
-      <div style="border-top: 1px solid #30363d; padding-top:1rem; margin-bottom:1.5rem;">
-        <h3 style="color:#a371f7; font-size:0.9rem; margin-bottom:0.5rem;">Immutable Policies</h3>
-        <p style="font-size:0.85rem; color:#8b949e; margin-bottom:0.75rem;">
-          Set immutable policy constraints for the registry.
-        </p>
-        <div class="form-group">
-          <label>Max Withdrawal USD (24h)</label>
-          <input id="policy-max-withdrawal" type="number" min="0" placeholder="e.g. 100000">
-        </div>
-        <div class="form-group inline">
-          <input type="checkbox" id="policy-require-oracle">
-          <label for="policy-require-oracle">Require Oracle Price</label>
-        </div>
-        <div class="form-group inline">
-          <input type="checkbox" id="policy-enforce-whitelist">
-          <label for="policy-enforce-whitelist">Enforce Whitelist</label>
-        </div>
-        <button class="purple" onclick="proposeImmutablePolicies()">Propose Policies</button>
-        <div id="immutable-policies-msg"></div>
       </div>
 
       <!-- Endpoints -->
@@ -552,20 +510,19 @@
 
     function renderCeremonyConfig(cc) {
       if (!cc) return '<span style="color:#8b949e;">(not set)</span>'
-      return `<div style="font-size:0.8rem;">Global Threshold (t): ${cc.global_threshold_t ?? '?'}</div>` +
-             `<div style="font-size:0.8rem;">Max Participants (n): ${cc.max_participants_n ?? '?'}</div>` +
-             `<div style="font-size:0.8rem;">Curves: [${(cc.allowed_curves || []).join(', ')}]</div>` +
+      return `<div style="font-size:0.8rem;">Curves: [${(cc.allowed_curves || []).join(', ')}]</div>` +
              `<div style="font-size:0.8rem;">Protocols: [${(cc.allowed_protocols || []).join(', ')}]</div>`
     }
 
     function renderInfrastructure(infra) {
       if (!infra) return '<span style="color:#8b949e;">(not set)</span>'
       let html = ''
-      if (infra.backoffice_pubkey) {
-        html += `<div class="mono" style="font-size:0.8rem;">Backoffice: ${infra.backoffice_pubkey}</div>`
-      }
-      if (infra.market_oracle_pubkey) {
-        html += `<div class="mono" style="font-size:0.8rem;">Oracle: ${infra.market_oracle_pubkey}</div>`
+      const oracles = Array.isArray(infra.market_oracle_pubkey) ? infra.market_oracle_pubkey : []
+      if (oracles.length) {
+        html += `<div style="font-size:0.8rem;">Market Oracle Addresses (${oracles.length}):</div>`
+        html += oracles.map(a =>
+          `<div class="mono" style="font-size:0.75rem; padding-left:1rem;">${a}</div>`
+        ).join('')
       }
       if (infra.trusted_binary_hashes && infra.trusted_binary_hashes.length) {
         html += `<div style="font-size:0.8rem;">Binary Hashes (${infra.trusted_binary_hashes.length}):</div>`
@@ -574,13 +531,6 @@
         ).join('')
       }
       return html || '<span style="color:#8b949e;">(empty)</span>'
-    }
-
-    function renderImmutablePolicies(pol) {
-      if (!pol) return '<span style="color:#8b949e;">(not set)</span>'
-      return `<div style="font-size:0.8rem;">Max Withdrawal USD (24h): ${pol.max_withdrawal_usd_24h ?? '?'}</div>` +
-             `<div style="font-size:0.8rem;">Require Oracle Price: ${pol.require_oracle_price ? 'Yes' : 'No'}</div>` +
-             `<div style="font-size:0.8rem;">Enforce Whitelist: ${pol.enforce_whitelist ? 'Yes' : 'No'}</div>`
     }
 
     function renderEndpoints(ep) {
@@ -629,9 +579,6 @@
     function docInfrastructure(doc) {
       return doc.trusted_infrastructure || null
     }
-    function docImmutablePolicies(doc) {
-      return doc.immutable_policies || null
-    }
     function docNodes(doc) {
       return doc.nodes || []
     }
@@ -655,7 +602,6 @@
         document.getElementById('cur-governance').innerHTML = renderGovernanceRoles(docGovernanceRoles(doc))
         document.getElementById('cur-ceremony-config').innerHTML = renderCeremonyConfig(docCeremonyConfig(doc))
         document.getElementById('cur-infrastructure').innerHTML = renderInfrastructure(docInfrastructure(doc))
-        document.getElementById('cur-immutable-policies').innerHTML = renderImmutablePolicies(docImmutablePolicies(doc))
         document.getElementById('cur-endpoints').innerHTML = renderEndpoints(docEndpoints(doc))
         document.getElementById('cur-expires').textContent = new Date(docExpiresAt(doc) * 1000).toLocaleString()
         document.getElementById('current-info').classList.remove('hidden')
@@ -686,29 +632,27 @@
       const cc = docCeremonyConfig(doc) || {}
       document.getElementById('cc-curves').value = (cc.allowed_curves || []).join(', ')
       document.getElementById('cc-protocols').value = (cc.allowed_protocols || []).join(', ')
-      document.getElementById('cc-global-threshold').value = cc.global_threshold_t ?? 2
-      document.getElementById('cc-max-participants').value = cc.max_participants_n ?? 9
 
       // Trusted Infrastructure
       const infra = docInfrastructure(doc) || {}
-      document.getElementById('infra-backoffice').value = infra.backoffice_pubkey || ''
-      document.getElementById('infra-oracle').value = infra.market_oracle_pubkey || ''
+      const oracleContainer = document.getElementById('infra-oracle-inputs')
+      oracleContainer.innerHTML = ''
+      const oracles = Array.isArray(infra.market_oracle_pubkey) ? infra.market_oracle_pubkey : []
+      oracles.forEach((a, i) => {
+        const div = document.createElement('div')
+        div.className = 'form-group'
+        div.innerHTML = `<label>Market Oracle Address ${i}</label><input class="infra-oracle-input" placeholder="0x..." value="${a}">`
+        oracleContainer.appendChild(div)
+      })
       const hashContainer = document.getElementById('infra-hash-inputs')
       hashContainer.innerHTML = ''
-      const hashes = infra.trusted_binary_hashes || ['']
-      if (hashes.length === 0) hashes.push('')
+      const hashes = infra.trusted_binary_hashes || []
       hashes.forEach((h, i) => {
         const div = document.createElement('div')
         div.className = 'form-group'
         div.innerHTML = `<label>Trusted Binary Hash ${i}</label><input class="infra-hash-input" placeholder="sha256 hex hash" value="${h}">`
         hashContainer.appendChild(div)
       })
-
-      // Immutable Policies
-      const pol = docImmutablePolicies(doc) || {}
-      document.getElementById('policy-max-withdrawal').value = pol.max_withdrawal_usd_24h ?? ''
-      document.getElementById('policy-require-oracle').checked = !!pol.require_oracle_price
-      document.getElementById('policy-enforce-whitelist').checked = !!pol.enforce_whitelist
 
       // Endpoints
       const ep = docEndpoints(doc)
@@ -807,8 +751,6 @@
       const cc = docCeremonyConfig(draft) || {}
       document.getElementById('cc-curves').value = (cc.allowed_curves || []).join(', ')
       document.getElementById('cc-protocols').value = (cc.allowed_protocols || []).join(', ')
-      document.getElementById('cc-global-threshold').value = cc.global_threshold_t ?? 2
-      document.getElementById('cc-max-participants').value = cc.max_participants_n ?? 9
       // Endpoints
       const ep = docEndpoints(draft)
       document.getElementById('propose-primary-url').value = ep?.primary || ''
@@ -824,23 +766,24 @@
       })
       // Infrastructure
       const infra = docInfrastructure(draft) || {}
-      document.getElementById('infra-backoffice').value = infra.backoffice_pubkey || ''
-      document.getElementById('infra-oracle').value = infra.market_oracle_pubkey || ''
+      const oracleContainer = document.getElementById('infra-oracle-inputs')
+      oracleContainer.innerHTML = ''
+      const oracles = Array.isArray(infra.market_oracle_pubkey) ? infra.market_oracle_pubkey : []
+      oracles.forEach((a, i) => {
+        const div = document.createElement('div')
+        div.className = 'form-group'
+        div.innerHTML = `<label>Market Oracle Address ${i}</label><input class="infra-oracle-input" placeholder="0x..." value="${a}">`
+        oracleContainer.appendChild(div)
+      })
       const hashContainer = document.getElementById('infra-hash-inputs')
       hashContainer.innerHTML = ''
-      const hashes = infra.trusted_binary_hashes || ['']
-      if (hashes.length === 0) hashes.push('')
+      const hashes = infra.trusted_binary_hashes || []
       hashes.forEach((h, i) => {
         const div = document.createElement('div')
         div.className = 'form-group'
         div.innerHTML = `<label>Trusted Binary Hash ${i}</label><input class="infra-hash-input" placeholder="sha256 hex hash" value="${h}">`
         hashContainer.appendChild(div)
       })
-      // Immutable Policies
-      const pol = docImmutablePolicies(draft) || {}
-      document.getElementById('policy-max-withdrawal').value = pol.max_withdrawal_usd_24h ?? ''
-      document.getElementById('policy-require-oracle').checked = !!pol.require_oracle_price
-      document.getElementById('policy-enforce-whitelist').checked = !!pol.enforce_whitelist
     }
 
     // ── Enroll ────────────────────────────────────────────────────────────
@@ -1186,22 +1129,14 @@
     async function proposeCeremonyConfig() {
       const allowed_curves = document.getElementById('cc-curves').value.split(',').map(s => s.trim()).filter(Boolean)
       const allowed_protocols = document.getElementById('cc-protocols').value.split(',').map(s => s.trim()).filter(Boolean)
-      const global_threshold_t = parseInt(document.getElementById('cc-global-threshold').value, 10)
-      const max_participants_n = parseInt(document.getElementById('cc-max-participants').value, 10)
       if (!allowed_curves.length || !allowed_protocols.length) {
         showMsg('ceremony-config-msg', 'Curves and protocols are required', false); return
-      }
-      if (isNaN(global_threshold_t) || global_threshold_t < 2) {
-        showMsg('ceremony-config-msg', 'Global threshold must be >= 2', false); return
-      }
-      if (isNaN(max_participants_n) || max_participants_n < 2) {
-        showMsg('ceremony-config-msg', 'Max participants must be >= 2', false); return
       }
       try {
         const res = await fetch(`${API}/ceremony-config/propose`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ global_threshold_t, max_participants_n, allowed_protocols, allowed_curves }),
+          body: JSON.stringify({ allowed_protocols, allowed_curves }),
         })
         const result = await res.json()
         if (res.ok) {
@@ -1224,16 +1159,25 @@
       container.appendChild(div)
     }
 
+    function addInfraOracleInput() {
+      const container = document.getElementById('infra-oracle-inputs')
+      const count = container.querySelectorAll('.infra-oracle-input').length
+      const div = document.createElement('div')
+      div.className = 'form-group'
+      div.innerHTML = `<label>Market Oracle Address ${count}</label><input class="infra-oracle-input" placeholder="0x...">`
+      container.appendChild(div)
+    }
+
     async function proposeInfrastructure() {
-      const backoffice_pubkey = document.getElementById('infra-backoffice').value.trim() || undefined
-      const market_oracle_pubkey = document.getElementById('infra-oracle').value.trim() || undefined
+      const oracleInputs = document.querySelectorAll('.infra-oracle-input')
+      const market_oracle_pubkey = Array.from(oracleInputs).map(el => el.value.trim()).filter(Boolean)
       const hashInputs = document.querySelectorAll('.infra-hash-input')
       const trusted_binary_hashes = Array.from(hashInputs).map(el => el.value.trim()).filter(Boolean)
 
-      const body = {}
-      if (backoffice_pubkey) body.backoffice_pubkey = backoffice_pubkey
-      if (market_oracle_pubkey) body.market_oracle_pubkey = market_oracle_pubkey
-      if (trusted_binary_hashes.length) body.trusted_binary_hashes = trusted_binary_hashes
+      const body = {
+        market_oracle_pubkey,
+        trusted_binary_hashes,
+      }
 
       try {
         const res = await fetch(`${API}/infrastructure/propose`, {
@@ -1250,33 +1194,6 @@
           showMsg('infrastructure-msg', result.message || 'Failed', false)
         }
       } catch (e) { showMsg('infrastructure-msg', e.message, false) }
-    }
-
-    // ── Immutable Policies ────────────────────────────────────────────────
-    async function proposeImmutablePolicies() {
-      const max_withdrawal_usd_24h = parseFloat(document.getElementById('policy-max-withdrawal').value)
-      const require_oracle_price = document.getElementById('policy-require-oracle').checked
-      const enforce_whitelist = document.getElementById('policy-enforce-whitelist').checked
-
-      if (isNaN(max_withdrawal_usd_24h) || max_withdrawal_usd_24h < 0) {
-        showMsg('immutable-policies-msg', 'Max withdrawal must be a non-negative number', false); return
-      }
-
-      try {
-        const res = await fetch(`${API}/immutable-policies/propose`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ max_withdrawal_usd_24h, require_oracle_price, enforce_whitelist }),
-        })
-        const result = await res.json()
-        if (res.ok) {
-          draft = result
-          showMsg('immutable-policies-msg', 'Immutable policies proposed! Draft created (v' + docVersion(result) + '). Go to Sign & Publish tab to sign.', true)
-          showDraftInfo()
-        } else {
-          showMsg('immutable-policies-msg', result.message || 'Failed', false)
-        }
-      } catch (e) { showMsg('immutable-policies-msg', e.message, false) }
     }
 
     // ── Endpoints Proposal ─────────────────────────────────────────────────
@@ -1721,7 +1638,6 @@
         const roles = docGovernanceRoles(doc)
         const cc = docCeremonyConfig(doc)
         const infra = docInfrastructure(doc)
-        const pol = docImmutablePolicies(doc)
         const sigs = docSignatures(doc)
         const nodes = docNodes(doc)
 
@@ -1733,7 +1649,6 @@
           <label style="margin-top:0.5rem;">Governance Roles</label><div class="value">${renderGovernanceRoles(roles)}</div>
           <label style="margin-top:0.5rem;">Ceremony Config</label><div class="value">${renderCeremonyConfig(cc)}</div>
           <label style="margin-top:0.5rem;">Trusted Infrastructure</label><div class="value">${renderInfrastructure(infra)}</div>
-          <label style="margin-top:0.5rem;">Immutable Policies</label><div class="value">${renderImmutablePolicies(pol)}</div>
           <label style="margin-top:0.5rem;">Document Hash</label><div class="value mono" style="font-size:0.75rem;">${docDocumentHash(doc)}</div>
           <label style="margin-top:0.5rem;">Prev Document Hash</label><div class="value mono" style="font-size:0.75rem;">${docPrevDocumentHash(doc) ?? 'null (genesis)'}</div>
           <label style="margin-top:0.5rem;">Merkle Root</label><div class="value mono" style="font-size:0.75rem;">${docMerkleRoot(doc)}</div>

@@ -11,7 +11,10 @@ MPC Custody Node Registry -- a NestJS server that manages a cryptographically si
 - `npm run start:dev` -- run dev server (ts-node-dev, auto-restarts on changes)
 - `npm run build` -- compile TypeScript to `dist/`
 - `npm run test` -- run all tests (`jest --runInBand`, 33 tests)
+- `npx jest -t "<name>"` -- run a single test by name (uses `.test.ts` matcher; tests are serial via `--runInBand`)
 - `npm run setup` -- create unsigned genesis (v1) document from `ADMIN_ADDRESS_*` (and optional role addresses) in `.env`
+- `npx ts-node scripts/verify-file.ts` -- standalone verification of `data/registry.json` against env trust root (used by CI)
+- `npx ts-node scripts/verify-node-changes.ts` -- validate node-level diffs and IK rotation proofs (used by CI)
 
 ## Initial Dev Setup
 
@@ -30,7 +33,7 @@ MPC Custody Node Registry -- a NestJS server that manages a cryptographically si
 
 1. **Create pending draft** -- `POST /pending` creates a new staged draft from the current document
 2. **Propose changes** -- `POST /nodes/enroll`, `/nodes/revoke`, `/nodes/rotate-ik`, `/nodes/maintenance`, `/nodes/reactivate` modify nodes in the staged draft
-3. **Configure document** -- `POST /governance/role`, `/infrastructure/propose`, `/ceremony-config/propose`, `/endpoints/propose`, `/immutable-policies/propose` modify draft metadata
+3. **Configure document** -- `POST /governance/role`, `/infrastructure/propose`, `/ceremony-config/propose`, `/endpoints/propose` modify draft metadata
 4. **Sign draft** -- `POST /pending/sign` adds a role-based signature (via MetaMask/Ledger in the web UI). Body: `{role, signer, signature, document_hash}`
 5. **Publish** -- `POST /publish` validates the fully-signed document through 12 verification steps and persists it
 6. **Discard draft** -- `DELETE /pending` clears the staged draft
@@ -52,10 +55,9 @@ The document is organized into top-level sections:
 - **`governance`**: `roles[]` -- each role has `role` (GovernanceRoleName), `display_name`, `addresses[]`, `quorum`, `features`
   - Closed set of role names: `SYSTEM_ADMIN` (mandatory), `POLICY_COMPLIANCE`, `TREASURY_OPS`, `AUDIT_OBSERVER`
   - `SYSTEM_ADMIN` requires min 3 addresses, quorum >= 2
-- **`ceremony_config`**: `global_threshold_t`, `max_participants_n`, `allowed_protocols[]`, `allowed_curves[]`
-- **`trusted_infrastructure`**: `backoffice_pubkey`, `market_oracle_pubkey`, `trusted_binary_hashes[]`
+- **`ceremony_config`**: `allowed_protocols[]`, `allowed_curves[]`
+- **`trusted_infrastructure`**: `market_oracle_pubkey[]` (array of Ethereum addresses), `trusted_binary_hashes[]`
 - **`nodes[]`**: NodeRecord with `node_id`, `ik_pub`, `ek_pub`, `role`, `status`, `enrolled_at`, `updated_at`, `revoked_at`, `ik_rotations[]`
-- **`immutable_policies`**: `max_withdrawal_usd_24h`, `require_oracle_price`, `enforce_whitelist`
 - **`signatures[]`**: `{role, signer, signature}` (RoleSignature)
 
 ### Cryptographic Design
@@ -111,13 +113,12 @@ These are mapped via `CONFIG.GENESIS_ROLE_PREFIXES`.
 - `POST /api/registry/ceremony-config/propose` -- propose ceremony configuration
 - `POST /api/registry/infrastructure/propose` -- propose trusted infrastructure changes
 - `POST /api/registry/endpoints/propose` -- propose registry endpoints
-- `POST /api/registry/immutable-policies/propose` -- propose immutable policies
-- `POST /api/registry/verify` -- verify any document (12-step pipeline)
+- `POST /api/registry/verify` -- verify any document (11-step pipeline)
 - `POST /api/registry/publish` -- publish a fully signed document
 
-### Verification Pipeline (12 steps)
+### Verification Pipeline (11 steps)
 
-1. Structure -- all required sections present (`registry_metadata`, `governance`, `ceremony_config`, `trusted_infrastructure`, `nodes`, `immutable_policies`, `signatures`)
+1. Structure -- all required sections present (`registry_metadata`, `governance`, `ceremony_config`, `trusted_infrastructure`, `nodes`, `signatures`)
 2. Registry ID -- matches configured ID
 3. Expiry -- document not expired
 4. Document hash -- SHA-256 integrity check
@@ -125,10 +126,9 @@ These are mapped via `CONFIG.GENESIS_ROLE_PREFIXES`.
 6. Hash chain -- links to previous version
 7. SYSTEM_ADMIN validation -- >= 3 addresses, quorum >= 2
 8. Per-role quorum -- ALL roles must meet their quorum with valid signatures (verified against previous version's role addresses)
-9. Ceremony config -- `global_threshold_t` >= 2, `allowed_curves`/`allowed_protocols` non-empty
+9. Ceremony config -- `allowed_curves`/`allowed_protocols` non-empty
 10. Endpoints -- URL format validation, no duplicates
-11. Immutable policies -- policy fields present and valid
-12. Trusted infrastructure -- address format validation, binary hashes integrity
+11. Trusted infrastructure -- `market_oracle_pubkey` entries are valid Ethereum addresses, binary hashes integrity
 
 ### Testing
 
