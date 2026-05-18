@@ -55,22 +55,14 @@ function main() {
       ],
     },
     ceremony_config: {
-      global_threshold_t:  2,
-      max_participants_n:  9,
       allowed_protocols:   ['CGGMP21', 'FROST'],
       allowed_curves:      ['Secp256k1', 'Ed25519'],
     },
     trusted_infrastructure: {
-      backoffice_pubkey: null,
-      market_oracle_pubkey:      null,
+      market_oracle_pubkey:      [],
       trusted_binary_hashes:      [],
     },
     nodes: [],
-    immutable_policies: {
-      max_withdrawal_usd_24h: 50000,
-      require_oracle_price:   true,
-      enforce_whitelist:      true,
-    },
   }
 
   unsigned.registry_metadata.document_hash = computeDocumentHash(unsigned)

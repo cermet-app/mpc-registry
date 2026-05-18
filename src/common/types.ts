@@ -18,7 +18,6 @@ export interface IkRotationEntry {
 export interface NodeRecord {
   node_id:         string
   ik_pub:          string
-  ek_pub:          string
   role:            NodeRole
   status:          NodeStatus
   enrolled_at:     number
@@ -76,8 +75,6 @@ export interface RegistryMetadata {
 // ── Ceremony Config ──────────────────────────────────────────────────────────
 
 export interface CeremonyConfig {
-  global_threshold_t:   number
-  max_participants_n:   number
   allowed_protocols:    string[]
   allowed_curves:       string[]
 }
@@ -85,17 +82,8 @@ export interface CeremonyConfig {
 // ── Trusted Infrastructure ───────────────────────────────────────────────────
 
 export interface TrustedInfrastructure {
-  backoffice_pubkey: string | null
-  market_oracle_pubkey:      string | null
+  market_oracle_pubkey:      string[]
   trusted_binary_hashes:      string[]
-}
-
-// ── Immutable Policies ───────────────────────────────────────────────────────
-
-export interface ImmutablePolicies {
-  max_withdrawal_usd_24h: number
-  require_oracle_price:   boolean
-  enforce_whitelist:       boolean
 }
 
 // ── Signatures ───────────────────────────────────────────────────────────────
@@ -114,7 +102,6 @@ export interface RegistryDocument {
   ceremony_config:        CeremonyConfig
   trusted_infrastructure: TrustedInfrastructure
   nodes:                  NodeRecord[]
-  immutable_policies:     ImmutablePolicies
   signatures:             RoleSignature[]
 }
 

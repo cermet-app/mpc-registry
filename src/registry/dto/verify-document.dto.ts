@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsArray, ValidateNested, IsIn, IsOptional, IsBoolean, Matches, ArrayNotEmpty, Min } from 'class-validator'
+import { IsString, IsNumber, IsArray, ValidateNested, IsIn, IsOptional, Matches, ArrayNotEmpty, Min } from 'class-validator'
 import { Type } from 'class-transformer'
 
 class IkRotationEntryDto {
@@ -24,9 +24,6 @@ class NodeRecordDto {
 
   @IsString()
   ik_pub: string
-
-  @IsString()
-  ek_pub: string
 
   @IsIn(['USER_COSIGNER', 'PROVIDER_COSIGNER', 'RECOVERY_GUARDIAN'])
   role: string
@@ -73,12 +70,6 @@ class EndpointsDto {
 }
 
 class CeremonyConfigDto {
-  @IsNumber() @Min(2)
-  global_threshold_t: number
-
-  @IsNumber() @Min(2)
-  max_participants_n: number
-
   @IsArray() @ArrayNotEmpty() @IsString({ each: true })
   allowed_protocols: string[]
 
@@ -143,28 +134,14 @@ class RegistryMetadataDto {
 }
 
 class TrustedInfrastructureDto {
-  @IsOptional()
-  @IsString()
-  backoffice_pubkey: string | null
-
-  @IsOptional()
-  @IsString()
-  market_oracle_pubkey: string | null
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(/^0x[0-9a-fA-F]{40}$/, { each: true, message: 'market_oracle_pubkey entries must be valid Ethereum addresses' })
+  market_oracle_pubkey: string[]
 
   @IsArray()
   @IsString({ each: true })
   trusted_binary_hashes: string[]
-}
-
-class ImmutablePoliciesDto {
-  @IsNumber() @Min(0)
-  max_withdrawal_usd_24h: number
-
-  @IsBoolean()
-  require_oracle_price: boolean
-
-  @IsBoolean()
-  enforce_whitelist: boolean
 }
 
 export class VerifyDocumentDto {
@@ -188,10 +165,6 @@ export class VerifyDocumentDto {
   @ValidateNested({ each: true })
   @Type(() => NodeRecordDto)
   nodes: NodeRecordDto[]
-
-  @ValidateNested()
-  @Type(() => ImmutablePoliciesDto)
-  immutable_policies: ImmutablePoliciesDto
 
   @IsArray()
   @ValidateNested({ each: true })

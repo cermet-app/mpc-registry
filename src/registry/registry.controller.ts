@@ -8,7 +8,7 @@ import {
   EnrollNodeDto, RevokeNodeDto, SignPendingDto,
   ProposeRoleDto, ProposeInfrastructureDto,
   ProposeEndpointsDto, ProposeCeremonyConfigDto,
-  ProposeImmutablePoliciesDto, VerifyDocumentDto,
+  VerifyDocumentDto,
   PublishDocumentDto, RotateIkDto, MaintenanceNodeDto,
   ReactivateNodeDto
 } from './dto'
@@ -90,10 +90,6 @@ export class RegistryController {
   @Post('ceremony-config/propose')
   @HttpCode(HttpStatus.OK)
   proposeCeremonyConfig(@Body() body: ProposeCeremonyConfigDto) { return this.svc.proposeCeremonyConfig({ ceremony_config: body }) }
-
-  @Post('immutable-policies/propose')
-  @HttpCode(HttpStatus.OK)
-  proposeImmutablePolicies(@Body() body: ProposeImmutablePoliciesDto) { return this.svc.proposeImmutablePolicies({ immutable_policies: body }) }
 
   @Post('endpoints/propose')
   @HttpCode(HttpStatus.OK)

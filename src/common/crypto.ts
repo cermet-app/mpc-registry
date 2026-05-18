@@ -8,9 +8,7 @@ import { createHash } from 'crypto'
 const { ed25519 } = require('@noble/curves/ed25519.js')
 import {
   UnsignedDocument, RoleSignature, VerifyResult,
-  NodeRecord, GovernanceRole, RegistryMetadata,
-  CeremonyConfig, TrustedInfrastructure, ImmutablePolicies,
-  RegistryEndpoints, Governance
+  GovernanceRole,
 } from './types'
 
 // ── Hashing ───────────────────────────────────────────────────────────────────
@@ -89,30 +87,21 @@ export const EIP712_TYPES = {
     { name: 'features_json', type: 'string' },
   ],
   CeremonyConfig: [
-    { name: 'global_threshold_t',  type: 'uint256' },
-    { name: 'max_participants_n',  type: 'uint256' },
     { name: 'allowed_protocols',   type: 'string[]' },
     { name: 'allowed_curves',      type: 'string[]' },
   ],
   TrustedInfrastructure: [
-    { name: 'backoffice_pubkey', type: 'string' },
-    { name: 'market_oracle_pubkey',      type: 'string' },
+    { name: 'market_oracle_pubkey',      type: 'string[]' },
     { name: 'trusted_binary_hashes',      type: 'string[]' },
   ],
   NodeRecord: [
     { name: 'node_id',      type: 'string' },
     { name: 'ik_pub',       type: 'string' },
-    { name: 'ek_pub',       type: 'string' },
     { name: 'role',          type: 'string' },
     { name: 'status',        type: 'string' },
     { name: 'enrolled_at',   type: 'uint256' },
     { name: 'updated_at',    type: 'uint256' },
     { name: 'revoked_at',    type: 'uint256' },
-  ],
-  ImmutablePolicies: [
-    { name: 'max_withdrawal_usd_24h', type: 'uint256' },
-    { name: 'require_oracle_price',   type: 'bool' },
-    { name: 'enforce_whitelist',       type: 'bool' },
   ],
   RegistryDocument: [
     { name: 'registry_metadata',      type: 'RegistryMetadata' },
@@ -120,7 +109,6 @@ export const EIP712_TYPES = {
     { name: 'ceremony_config',        type: 'CeremonyConfig' },
     { name: 'trusted_infrastructure', type: 'TrustedInfrastructure' },
     { name: 'nodes',                  type: 'NodeRecord[]' },
-    { name: 'immutable_policies',     type: 'ImmutablePolicies' },
   ],
 }
 
@@ -150,31 +138,22 @@ export function buildTypedDataValue(doc: DocForSigning) {
       features_json: JSON.stringify(r.features ?? {}),
     })),
     ceremony_config: {
-      global_threshold_t:  doc.ceremony_config.global_threshold_t,
-      max_participants_n:  doc.ceremony_config.max_participants_n,
       allowed_protocols:   doc.ceremony_config.allowed_protocols,
       allowed_curves:      doc.ceremony_config.allowed_curves,
     },
     trusted_infrastructure: {
-      backoffice_pubkey: doc.trusted_infrastructure.backoffice_pubkey ?? '',
-      market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? '',
+      market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? [],
       trusted_binary_hashes:      doc.trusted_infrastructure.trusted_binary_hashes ?? [],
     },
     nodes: doc.nodes.map(n => ({
       node_id:      n.node_id,
       ik_pub:       n.ik_pub,
-      ek_pub:       n.ek_pub,
       role:          n.role,
       status:        n.status,
       enrolled_at:   n.enrolled_at,
       updated_at:    n.updated_at ?? 0,
       revoked_at:    n.revoked_at ?? 0,
     })),
-    immutable_policies: {
-      max_withdrawal_usd_24h: doc.immutable_policies.max_withdrawal_usd_24h,
-      require_oracle_price:   doc.immutable_policies.require_oracle_price,
-      enforce_whitelist:       doc.immutable_policies.enforce_whitelist,
-    },
   }
 }
 

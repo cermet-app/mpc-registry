@@ -79,22 +79,14 @@ async function buildDoc(overrides: Record<string, any> = {}): Promise<RegistryDo
       }],
     },
     ceremony_config: {
-      global_threshold_t: 2,
-      max_participants_n: 9,
       allowed_protocols: ['CGGMP21', 'FROST'],
       allowed_curves: ['Secp256k1', 'Ed25519'],
     },
     trusted_infrastructure: {
-      backoffice_pubkey: null,
-      market_oracle_pubkey: null,
+      market_oracle_pubkey: [],
       trusted_binary_hashes: [],
     },
     nodes: [],
-    immutable_policies: {
-      max_withdrawal_usd_24h: 100000,
-      require_oracle_price: true,
-      enforce_whitelist: true,
-    },
   }
 
   // Apply overrides (shallow merge into nested sections)
@@ -105,7 +97,6 @@ async function buildDoc(overrides: Record<string, any> = {}): Promise<RegistryDo
   if (overrides.ceremony_config) u.ceremony_config = overrides.ceremony_config
   if (overrides.trusted_infrastructure) u.trusted_infrastructure = overrides.trusted_infrastructure
   if (overrides.nodes) u.nodes = overrides.nodes
-  if (overrides.immutable_policies) u.immutable_policies = overrides.immutable_policies
 
   // Recompute merkle root and document hash
   u.registry_metadata.merkle_root = computeMerkleRoot(u.nodes)
@@ -155,10 +146,9 @@ describe('Verify — each failure case', () => {
         updated_at: '', endpoints: null,
       },
       governance: { roles: [] },
-      ceremony_config: { global_threshold_t: 2, max_participants_n: 9, allowed_protocols: ['CGGMP21'], allowed_curves: ['Secp256k1'] },
-      trusted_infrastructure: { backoffice_pubkey: null, market_oracle_pubkey: null, trusted_binary_hashes: [] },
+      ceremony_config: { allowed_protocols: ['CGGMP21'], allowed_curves: ['Secp256k1'] },
+      trusted_infrastructure: { market_oracle_pubkey: [], trusted_binary_hashes: [] },
       nodes: [],
-      immutable_policies: { max_withdrawal_usd_24h: 50000, require_oracle_price: true, enforce_whitelist: true },
       signatures: [],
     })
     expect(r.status).toBe(200)
@@ -181,7 +171,7 @@ describe('Verify — each failure case', () => {
 
   it('tampered content', async () => {
     const d = await buildDoc()
-    d.nodes = [{ node_id: 'hack', ik_pub: 'a'.repeat(64), ek_pub: 'b'.repeat(64), role: 'RECOVERY_GUARDIAN', status: 'ACTIVE', enrolled_at: 1 }]
+    d.nodes = [{ node_id: 'hack', ik_pub: 'a'.repeat(64), role: 'RECOVERY_GUARDIAN', status: 'ACTIVE', enrolled_at: 1 }]
     const r = await request(app.getHttpServer()).post('/api/registry/verify').send(d)
     expect(r.body.steps.find((s: any) => s.step === 'document_hash').passed).toBe(false)
   })
@@ -225,7 +215,7 @@ describe('Full publish flow', () => {
 
   it('enroll proposes a draft', async () => {
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'a'.repeat(64), ek_pub: 'b'.repeat(64),
+      ik_pub: 'a'.repeat(64),
       role: 'PROVIDER_COSIGNER',
     })
     expect(r.status).toBe(200)
@@ -328,7 +318,7 @@ describe('Security', () => {
   it('draft locked during signing — rejects enroll after sign', async () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'c'.repeat(64), ek_pub: 'd'.repeat(64),
+      ik_pub: 'c'.repeat(64),
       role: 'USER_COSIGNER',
     })
     const pending = (await request(app.getHttpServer()).get('/api/registry/pending')).body
@@ -340,7 +330,7 @@ describe('Security', () => {
       signature: sig,
     })
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: 'e'.repeat(64), ek_pub: 'f'.repeat(64),
+      ik_pub: 'e'.repeat(64),
       role: 'USER_COSIGNER',
     })
     expect(r.status).toBe(409)
@@ -361,7 +351,7 @@ describe('Security', () => {
     await request(app.getHttpServer()).post('/api/registry/publish').send(signed)
 
     const r = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: activeNode.ik_pub, ek_pub: activeNode.ek_pub,
+      ik_pub: activeNode.ik_pub,
       role: activeNode.role,
     })
     expect(r.status).toBe(409)
@@ -396,12 +386,12 @@ describe('Security', () => {
   it('node_id collision check', async () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     const r1 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '1'.repeat(64), ek_pub: '2'.repeat(64),
+      ik_pub: '1'.repeat(64),
       role: 'RECOVERY_GUARDIAN',
     })
     expect(r1.status).toBe(200)
     const r2 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '1'.repeat(64), ek_pub: '3'.repeat(64),
+      ik_pub: '1'.repeat(64),
       role: 'RECOVERY_GUARDIAN',
     })
     expect(r2.status).toBe(409)
@@ -431,7 +421,7 @@ describe('Security', () => {
 
   it('invalid node role — rejects bad role value', async () => {
     const r1 = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '5'.repeat(64), ek_pub: '6'.repeat(64),
+      ik_pub: '5'.repeat(64),
       role: 'INVALID_ROLE',
     })
     expect(r1.status).toBe(400)
@@ -461,7 +451,7 @@ describe('Node maintenance and reactivation', () => {
     await request(app.getHttpServer()).delete('/api/registry/pending')
     // Enroll a new node
     const enrollRes = await request(app.getHttpServer()).post('/api/registry/nodes/enroll').send({
-      ik_pub: '7'.repeat(64), ek_pub: '8'.repeat(64),
+      ik_pub: '7'.repeat(64),
       role: 'USER_COSIGNER',
     })
     expect(enrollRes.status).toBe(200)

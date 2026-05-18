@@ -11,7 +11,7 @@ import {
   RegistryDocument, UnsignedDocument, NodeRecord, RoleSignature,
   NodeRole, IkRotationEntry,
   GovernanceRole, GovernanceRoleName,
-  CeremonyConfig, TrustedInfrastructure, ImmutablePolicies,
+  CeremonyConfig, TrustedInfrastructure,
 } from '../common/types'
 import {
   computeDocumentHash, computeMerkleRoot,
@@ -256,14 +256,14 @@ export class RegistryService implements OnModuleInit {
     }
 
     // Validate hex address formats if provided
-    if (body.backoffice_pubkey !== undefined && body.backoffice_pubkey !== null) {
-      if (!/^0x[0-9a-fA-F]{40}$/.test(body.backoffice_pubkey)) {
-        throw new BadRequestException('backoffice_pubkey must be a valid Ethereum address (0x + 40 hex chars)')
+    if (body.market_oracle_pubkey !== undefined) {
+      if (!Array.isArray(body.market_oracle_pubkey)) {
+        throw new BadRequestException('market_oracle_pubkey must be an array of Ethereum addresses')
       }
-    }
-    if (body.market_oracle_pubkey !== undefined && body.market_oracle_pubkey !== null) {
-      if (!/^0x[0-9a-fA-F]{40}$/.test(body.market_oracle_pubkey)) {
-        throw new BadRequestException('market_oracle_pubkey must be a valid Ethereum address (0x + 40 hex chars)')
+      for (const addr of body.market_oracle_pubkey) {
+        if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+          throw new BadRequestException(`Invalid market_oracle_pubkey entry: ${addr} (must be 0x + 40 hex chars)`)
+        }
       }
     }
     if (body.trusted_binary_hashes !== undefined) {
@@ -285,9 +285,6 @@ export class RegistryService implements OnModuleInit {
     }
 
     // Apply partial updates
-    if (body.backoffice_pubkey !== undefined) {
-      this.stagedDraft.trusted_infrastructure.backoffice_pubkey = body.backoffice_pubkey
-    }
     if (body.market_oracle_pubkey !== undefined) {
       this.stagedDraft.trusted_infrastructure.market_oracle_pubkey = body.market_oracle_pubkey
     }
@@ -316,15 +313,6 @@ export class RegistryService implements OnModuleInit {
     if (!Array.isArray(cc.allowed_protocols) || cc.allowed_protocols.length === 0) {
       throw new BadRequestException('ceremony_config.allowed_protocols must be a non-empty array')
     }
-    if (!Number.isInteger(cc.global_threshold_t) || cc.global_threshold_t < 2) {
-      throw new BadRequestException('ceremony_config.global_threshold_t must be an integer >= 2')
-    }
-    if (!Number.isInteger(cc.max_participants_n) || cc.max_participants_n < 2) {
-      throw new BadRequestException('ceremony_config.max_participants_n must be an integer >= 2')
-    }
-    if (cc.max_participants_n < cc.global_threshold_t) {
-      throw new BadRequestException('ceremony_config.max_participants_n must be >= global_threshold_t')
-    }
 
     // Auto-create draft if none exists
     if (!this.stagedDraft) {
@@ -337,40 +325,6 @@ export class RegistryService implements OnModuleInit {
     this._refreshDraftHash()
 
     this.audit('CEREMONY_CONFIG_PROPOSED', { ceremony_config: cc })
-    return this.stagedDraft
-  }
-
-  /** POST /registry/immutable-policies/propose — propose immutable policies */
-  proposeImmutablePolicies(body: { immutable_policies: ImmutablePolicies }): RegistryDocument {
-    if (this.draftLocked) {
-      throw new ConflictException('Draft is locked — it already has signatures. DELETE /registry/pending first.')
-    }
-
-    const ip = body.immutable_policies
-    if (!ip || typeof ip !== 'object') {
-      throw new BadRequestException('immutable_policies must be an object')
-    }
-    if (typeof ip.max_withdrawal_usd_24h !== 'number' || ip.max_withdrawal_usd_24h < 0) {
-      throw new BadRequestException('immutable_policies.max_withdrawal_usd_24h must be a non-negative number')
-    }
-    if (typeof ip.require_oracle_price !== 'boolean') {
-      throw new BadRequestException('immutable_policies.require_oracle_price must be a boolean')
-    }
-    if (typeof ip.enforce_whitelist !== 'boolean') {
-      throw new BadRequestException('immutable_policies.enforce_whitelist must be a boolean')
-    }
-
-    // Auto-create draft if none exists
-    if (!this.stagedDraft) {
-      const nodes = this.currentDoc ? [...this.currentDoc.nodes] : []
-      const base = this._buildDraft(nodes)
-      this.stagedDraft = { ...base, signatures: [] }
-    }
-
-    this.stagedDraft.immutable_policies = ip
-    this._refreshDraftHash()
-
-    this.audit('IMMUTABLE_POLICIES_PROPOSED', { immutable_policies: ip })
     return this.stagedDraft
   }
 
@@ -498,7 +452,7 @@ export class RegistryService implements OnModuleInit {
     // Step 1 — Structure
     const requiredSections = [
       'registry_metadata', 'governance', 'ceremony_config',
-      'trusted_infrastructure', 'nodes', 'immutable_policies', 'signatures',
+      'trusted_infrastructure', 'nodes', 'signatures',
     ]
     const missingSections = requiredSections.filter(f => doc[f] === undefined)
     if (missingSections.length > 0) {
@@ -624,14 +578,8 @@ export class RegistryService implements OnModuleInit {
       fail('ceremonyConfig', 'ceremony_config.allowed_curves must be a non-empty array')
     } else if (!Array.isArray(cc.allowed_protocols) || cc.allowed_protocols.length === 0) {
       fail('ceremonyConfig', 'ceremony_config.allowed_protocols must be a non-empty array')
-    } else if (!Number.isInteger(cc.global_threshold_t) || cc.global_threshold_t < 2) {
-      fail('ceremonyConfig', 'ceremony_config.global_threshold_t must be an integer >= 2')
-    } else if (!Number.isInteger(cc.max_participants_n) || cc.max_participants_n < 2) {
-      fail('ceremonyConfig', 'ceremony_config.max_participants_n must be an integer >= 2')
-    } else if (cc.max_participants_n < cc.global_threshold_t) {
-      fail('ceremonyConfig', 'ceremony_config.max_participants_n must be >= global_threshold_t')
     } else {
-      pass('ceremonyConfig', `Curves: [${cc.allowed_curves.join(', ')}], Protocols: [${cc.allowed_protocols.join(', ')}], Threshold: ${cc.global_threshold_t}, Max: ${cc.max_participants_n}`)
+      pass('ceremonyConfig', `Curves: [${cc.allowed_curves.join(', ')}], Protocols: [${cc.allowed_protocols.join(', ')}]`)
     }
 
     // Step 10 — Endpoints validation
@@ -659,33 +607,23 @@ export class RegistryService implements OnModuleInit {
       pass('endpoints', 'No endpoints configured')
     }
 
-    // Step 11 — Immutable policies validation
-    const ip = doc.immutable_policies
-    if (!ip || typeof ip !== 'object') {
-      fail('immutablePolicies', 'immutable_policies must be an object')
-    } else if (typeof ip.max_withdrawal_usd_24h !== 'number' || ip.max_withdrawal_usd_24h < 0) {
-      fail('immutablePolicies', 'immutable_policies.max_withdrawal_usd_24h must be a non-negative number')
-    } else if (typeof ip.require_oracle_price !== 'boolean') {
-      fail('immutablePolicies', 'immutable_policies.require_oracle_price must be a boolean')
-    } else if (typeof ip.enforce_whitelist !== 'boolean') {
-      fail('immutablePolicies', 'immutable_policies.enforce_whitelist must be a boolean')
-    } else {
-      pass('immutablePolicies', `max_withdrawal_usd_24h: ${ip.max_withdrawal_usd_24h}, oracle: ${ip.require_oracle_price}, whitelist: ${ip.enforce_whitelist}`)
-    }
-
-    // Step 12 — Trusted infrastructure validation
+    // Step 11 — Trusted infrastructure validation
     const ti = doc.trusted_infrastructure
     if (!ti || typeof ti !== 'object') {
       fail('trustedInfrastructure', 'trusted_infrastructure must be an object')
     } else {
       let tiValid = true
-      if (ti.backoffice_pubkey && !/^0x[0-9a-fA-F]{40}$/.test(ti.backoffice_pubkey)) {
-        fail('trustedInfrastructure', `Invalid backoffice_pubkey format: ${ti.backoffice_pubkey}`)
-        tiValid = false
-      }
-      if (tiValid && ti.market_oracle_pubkey && !/^0x[0-9a-fA-F]{40}$/.test(ti.market_oracle_pubkey)) {
-        fail('trustedInfrastructure', `Invalid market_oracle_pubkey format: ${ti.market_oracle_pubkey}`)
-        tiValid = false
+      if (ti.market_oracle_pubkey !== undefined && ti.market_oracle_pubkey !== null) {
+        if (!Array.isArray(ti.market_oracle_pubkey)) {
+          fail('trustedInfrastructure', 'market_oracle_pubkey must be an array of Ethereum addresses')
+          tiValid = false
+        } else {
+          const badAddr = ti.market_oracle_pubkey.find((a: string) => !/^0x[0-9a-fA-F]{40}$/.test(a))
+          if (badAddr) {
+            fail('trustedInfrastructure', `Invalid market_oracle_pubkey entry: ${badAddr}`)
+            tiValid = false
+          }
+        }
       }
       if (tiValid && ti.trusted_binary_hashes) {
         if (!Array.isArray(ti.trusted_binary_hashes)) {
@@ -714,7 +652,6 @@ export class RegistryService implements OnModuleInit {
 
   proposeEnroll(body: {
     ik_pub: string
-    ek_pub: string
     role: NodeRole
   }): { node_id: string; draft: RegistryDocument } {
     if (this.draftLocked) {
@@ -726,7 +663,6 @@ export class RegistryService implements OnModuleInit {
 
     // Validate
     if (!/^[0-9a-f]{64}$/i.test(body.ik_pub)) throw new BadRequestException('ik_pub must be 32 bytes (64 hex chars)')
-    if (!/^[0-9a-f]{64}$/i.test(body.ek_pub)) throw new BadRequestException('ek_pub must be 32 bytes (64 hex chars)')
     if (!['USER_COSIGNER', 'PROVIDER_COSIGNER', 'RECOVERY_GUARDIAN'].includes(body.role)) {
       throw new BadRequestException('Invalid role')
     }
@@ -749,7 +685,13 @@ export class RegistryService implements OnModuleInit {
     }
 
     // Add the node
-    const newNode: NodeRecord = { ...body, node_id: nodeId, status: 'ACTIVE', enrolled_at: now }
+    const newNode: NodeRecord = {
+      node_id: nodeId,
+      ik_pub: body.ik_pub,
+      role: body.role,
+      status: 'ACTIVE',
+      enrolled_at: now,
+    }
     this.stagedDraft.nodes.push(newNode)
     this._refreshDraftHash()
 
@@ -934,19 +876,16 @@ export class RegistryService implements OnModuleInit {
         })),
       },
       ceremony_config: {
-        global_threshold_t:  doc.ceremony_config.global_threshold_t,
-        max_participants_n:  doc.ceremony_config.max_participants_n,
         allowed_protocols:   doc.ceremony_config.allowed_protocols,
         allowed_curves:      doc.ceremony_config.allowed_curves,
       },
       trusted_infrastructure: {
-        backoffice_pubkey: doc.trusted_infrastructure.backoffice_pubkey ?? null,
-        market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? null,
+        market_oracle_pubkey:      doc.trusted_infrastructure.market_oracle_pubkey ?? [],
         trusted_binary_hashes:      doc.trusted_infrastructure.trusted_binary_hashes ?? [],
       },
       nodes: doc.nodes.map(n => {
         const node: NodeRecord = {
-          node_id: n.node_id, ik_pub: n.ik_pub, ek_pub: n.ek_pub,
+          node_id: n.node_id, ik_pub: n.ik_pub,
           role: n.role, status: n.status, enrolled_at: n.enrolled_at,
         }
         if (n.updated_at) node.updated_at = n.updated_at
@@ -954,11 +893,6 @@ export class RegistryService implements OnModuleInit {
         if (n.ik_rotations?.length) node.ik_rotations = n.ik_rotations
         return node
       }),
-      immutable_policies: {
-        max_withdrawal_usd_24h: doc.immutable_policies.max_withdrawal_usd_24h,
-        require_oracle_price:   doc.immutable_policies.require_oracle_price,
-        enforce_whitelist:       doc.immutable_policies.enforce_whitelist,
-      },
       signatures: doc.signatures.map(s => ({
         role:      s.role,
         signer:    s.signer,
@@ -1033,22 +967,14 @@ export class RegistryService implements OnModuleInit {
         roles: governanceRoles,
       },
       ceremony_config: this.currentDoc?.ceremony_config ?? {
-        global_threshold_t: 2,
-        max_participants_n: 9,
         allowed_protocols: ['CGGMP21', 'FROST'],
         allowed_curves: ['Secp256k1', 'Ed25519'],
       },
       trusted_infrastructure: this.currentDoc?.trusted_infrastructure ?? {
-        backoffice_pubkey: null,
-        market_oracle_pubkey: null,
+        market_oracle_pubkey: [],
         trusted_binary_hashes: [],
       },
       nodes: sorted,
-      immutable_policies: this.currentDoc?.immutable_policies ?? {
-        max_withdrawal_usd_24h: 100000,
-        require_oracle_price: true,
-        enforce_whitelist: true,
-      },
     }
     draft.registry_metadata.document_hash = computeDocumentHash(draft)
     return draft

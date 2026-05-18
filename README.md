@@ -31,10 +31,9 @@ A signed JSON registry for MPC custody node admission. Uses EIP-712 v2 typed dat
       { "role": "SYSTEM_ADMIN", "display_name": "System Administrator", "addresses": ["0x..."], "quorum": 2, "features": {} }
     ]
   },
-  "ceremony_config": { "global_threshold_t": 2, "max_participants_n": 3, "allowed_protocols": ["cmp"], "allowed_curves": ["Secp256k1"] },
-  "trusted_infrastructure": { "backoffice_pubkey": null, "market_oracle_pubkey": null, "trusted_binary_hashes": [] },
-  "nodes": [{ "node_id": "...", "ik_pub": "...", "ek_pub": "...", "role": "PROVIDER_COSIGNER", "status": "ACTIVE", "enrolled_at": 1710000000 }],
-  "immutable_policies": { "max_withdrawal_usd_24h": 1000000, "require_oracle_price": true, "enforce_whitelist": true },
+  "ceremony_config": { "allowed_protocols": ["cmp"], "allowed_curves": ["Secp256k1"] },
+  "trusted_infrastructure": { "market_oracle_pubkey": [], "trusted_binary_hashes": [] },
+  "nodes": [{ "node_id": "...", "ik_pub": "...", "role": "PROVIDER_COSIGNER", "status": "ACTIVE", "enrolled_at": 1710000000 }],
   "signatures": [{ "role": "SYSTEM_ADMIN", "signer": "0x...", "signature": "0x..." }]
 }
 ```
@@ -87,7 +86,6 @@ npm run start:dev    # start the server
 | POST | /api/registry/ceremony-config/propose | Propose ceremony configuration |
 | POST | /api/registry/infrastructure/propose | Propose trusted infrastructure changes |
 | POST | /api/registry/endpoints/propose | Propose registry endpoints |
-| POST | /api/registry/immutable-policies/propose | Propose immutable policies |
 | POST | /api/registry/publish | Publish a fully signed document |
 
 ## Governance Roles
@@ -99,7 +97,7 @@ npm run start:dev    # start the server
 | `TREASURY_OPS` | No | - | Treasury operations |
 | `AUDIT_OBSERVER` | No | - | Audit observation |
 
-## Verification Pipeline (12 steps)
+## Verification Pipeline (11 steps)
 
 1. Structure -- required sections present
 2. Registry ID -- matches config
@@ -109,10 +107,9 @@ npm run start:dev    # start the server
 6. Hash chain -- prev_document_hash links correctly
 7. SYSTEM_ADMIN -- >= 3 addresses, quorum >= 2
 8. Per-role quorum -- ALL roles meet their quorum
-9. Ceremony config -- global_threshold_t >= 2, etc.
+9. Ceremony config -- `allowed_curves`/`allowed_protocols` non-empty
 10. Endpoints -- URL validation
-11. Immutable policies -- valid
-12. Trusted infrastructure -- hex format validation
+11. Trusted infrastructure -- `market_oracle_pubkey[]` entries valid, binary hashes integrity
 
 ## Read the testing guide
 
