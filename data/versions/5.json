@@ -1,13 +1,13 @@
 {
   "registry_metadata": {
     "registry_id": "custody-wallet",
-    "version": 6,
-    "issued_at": 1780437552,
-    "expires_at": 1781042352,
-    "updated_at": "2026-06-02T21:59:12.531Z",
-    "document_hash": "c6a92cd413aaed737491bc112a7ff0b3161011ab450bea6e751cd916d76efc64",
+    "version": 5,
+    "issued_at": 1780437195,
+    "expires_at": 1781041995,
+    "updated_at": "2026-06-02T21:53:15.864Z",
+    "document_hash": "391f9ed267bead50f5fec5cca14c3c874e73e84c9d8cba52ad69dbebb7f79756",
     "merkle_root": "3e8f874a16122879fd9ae5df454b8b2eba435eef36707c7804e512de63b21300",
-    "prev_document_hash": "391f9ed267bead50f5fec5cca14c3c874e73e84c9d8cba52ad69dbebb7f79756",
+    "prev_document_hash": "5b3b6c15252c173838f6c4b24cace9d47cee5e79c63e0bc2c2d1d68166528b5c",
     "endpoints": null
   },
   "governance": {
@@ -37,7 +37,7 @@
   },
   "trusted_infrastructure": {
     "market_oracle_pubkey": [
-      "e133ff535cce7ec19f137c1f2c1ddaa0c87dc3217d151e87e5d91643135fb235"
+      "2dd81bd67d5fb821e6def21e5fdf8a8ec7beaca6e447885ad8fb07142c2c7a7e"
     ],
     "trusted_binary_hashes": []
   },
@@ -67,13 +67,13 @@
   "signatures": [
     {
       "role": "SYSTEM_ADMIN",
-      "signer": "0x7c9f957de53d154320b2d0bb4547b094fe372e47",
-      "signature": "0x9a532f5539a65bfd1dbc519af74b387b547c1df219336181e726d61f03872a5e14f709164a3217cc3507ebb20e1dfdf4f2bfec89f4f4b9fae5be2b32300485f81b"
+      "signer": "0x9140c30772d963fe04f64d2c8d2454cf67a9ab48",
+      "signature": "0xfb24177a4c80b4688c60304d64fe915bdaa672c0311899c7e5f7330c5d99d4e85e337196a46e00b4d4024b45ac8c2c3680922e25fbc98495b548e8504c938e671c"
     },
     {
       "role": "SYSTEM_ADMIN",
-      "signer": "0x3f1707fdaf87ee42f9d53fe0af2fd96995a80059",
-      "signature": "0xfe6b43f3edffbf24ddf8dc40033e71a7b0712b18ed5eeadebfd58666a49dd72f40e957f338091f31ecc951481dcc3575381b549c042246e371d04c423dec48ef1b"
+      "signer": "0x7c9f957de53d154320b2d0bb4547b094fe372e47",
+      "signature": "0xbc3c1bdddd892afa941c2257a9e1ddd7cb778ab2f4ae1ddc79bf0e4fd657fc371dfc9bda97dc33f1db3f464a6745a557738bcdfec5eb599748a3aea98a65e51a1b"
     }
   ]
 }
