@@ -60,7 +60,7 @@ The `registry.json` file contains a single `RegistryDocument` with nested sectio
     "allowed_curves":       ["Secp256k1"]          // elliptic curves allowed
   },
   "trusted_infrastructure": {
-    "market_oracle_pubkey":     ["0xDef..."],      // array of approved oracle Ethereum addresses
+    "market_oracle_pubkey":     ["95aa86a98d90f6d01407219eb951890c465320015cd2f2f8a23df6671e8fbb68"],  // 32-byte hex pubkeys (64 hex chars, no 0x)
     "trusted_binary_hashes":    ["sha256-hex..."]  // hashes of trusted binaries
   },
   "nodes": [
@@ -124,7 +124,7 @@ The `ceremony_config` object controls which cryptographic parameters are allowed
 ### Trusted Infrastructure
 
 The `trusted_infrastructure` section contains addresses and hashes for infrastructure components:
-- `market_oracle_pubkey` -- array of Ethereum addresses for approved price oracles (may be empty)
+- `market_oracle_pubkey` -- array of 32-byte hex pubkeys (64 hex chars, no `0x` prefix) for approved price oracles (may be empty). Verify oracle-signed prices against one of these pubkeys (e.g. Ed25519).
 - `trusted_binary_hashes` -- SHA-256 hashes of trusted node binaries
 
 ---
@@ -439,13 +439,13 @@ function checkTrustedInfrastructure(doc: RegistryDocument): void {
   const ti = doc.trusted_infrastructure;
   if (!ti) throw new Error('trusted_infrastructure is required');
 
-  const hexPattern = /^0x[0-9a-fA-F]{40}$/;
+  const oraclePkPattern = /^[0-9a-fA-F]{64}$/;
   if (!Array.isArray(ti.market_oracle_pubkey)) {
     throw new Error('market_oracle_pubkey must be an array');
   }
-  for (const addr of ti.market_oracle_pubkey) {
-    if (!hexPattern.test(addr)) {
-      throw new Error(`Invalid market_oracle_pubkey entry: ${addr}`);
+  for (const pk of ti.market_oracle_pubkey) {
+    if (!oraclePkPattern.test(pk)) {
+      throw new Error(`Invalid market_oracle_pubkey entry: ${pk} (must be 64 hex chars)`);
     }
   }
   for (const hash of ti.trusted_binary_hashes) {
@@ -529,18 +529,20 @@ async function startSigningCeremony(txPayload: any) {
 }
 ```
 
-### 5.4 -- Using Approved Oracle Addresses
+### 5.4 -- Using Approved Oracle Pubkeys
 
 ```typescript
 function getApprovedOracles(doc: RegistryDocument): string[] {
-  return doc.trusted_infrastructure.market_oracle_pubkey;
+  return doc.trusted_infrastructure.market_oracle_pubkey; // 32-byte hex pubkeys (64 chars, no 0x)
 }
 
-function isApprovedOracle(doc: RegistryDocument, signerAddress: string): boolean {
-  const approved = getApprovedOracles(doc).map(a => a.toLowerCase());
-  return approved.includes(signerAddress.toLowerCase());
+function isApprovedOracle(doc: RegistryDocument, oraclePubkey: string): boolean {
+  const approved = getApprovedOracles(doc).map(k => k.toLowerCase());
+  return approved.includes(oraclePubkey.toLowerCase());
 }
 ```
+
+When you receive a price feed, verify the oracle's signature (Ed25519 or equivalent) over the payload against one of these pubkeys before trusting the price.
 
 ---
 

@@ -56,7 +56,7 @@ The document is organized into top-level sections:
   - Closed set of role names: `SYSTEM_ADMIN` (mandatory), `POLICY_COMPLIANCE`, `TREASURY_OPS`, `AUDIT_OBSERVER`
   - `SYSTEM_ADMIN` requires min 3 addresses, quorum >= 2
 - **`ceremony_config`**: `allowed_protocols[]`, `allowed_curves[]`
-- **`trusted_infrastructure`**: `market_oracle_pubkey[]` (array of Ethereum addresses), `trusted_binary_hashes[]`
+- **`trusted_infrastructure`**: `market_oracle_pubkey[]` (array of 32-byte hex public keys, 64 hex chars, no `0x` prefix), `trusted_binary_hashes[]`
 - **`nodes[]`**: NodeRecord with `node_id`, `ik_pub`, `role`, `status`, `enrolled_at`, `updated_at`, `revoked_at`, `ik_rotations[]` (ephemeral keys are NOT stored in the registry — each node serves its current ephemeral pubkey at ceremony time, signed by its `ik_pub`)
 - **`signatures[]`**: `{role, signer, signature}` (RoleSignature)
 
@@ -128,7 +128,7 @@ These are mapped via `CONFIG.GENESIS_ROLE_PREFIXES`.
 8. Per-role quorum -- ALL roles must meet their quorum with valid signatures (verified against previous version's role addresses)
 9. Ceremony config -- `allowed_curves`/`allowed_protocols` non-empty
 10. Endpoints -- URL format validation, no duplicates
-11. Trusted infrastructure -- `market_oracle_pubkey` entries are valid Ethereum addresses, binary hashes integrity
+11. Trusted infrastructure -- `market_oracle_pubkey` entries are 32-byte hex public keys (64 hex chars), binary hashes integrity
 
 ### Testing
 
