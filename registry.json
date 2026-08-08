@@ -1,0 +1,79 @@
+{
+  "registry_metadata": {
+    "registry_id": "custody-wallet",
+    "version": 8,
+    "issued_at": 1781680376,
+    "expires_at": 1805008376,
+    "updated_at": "2026-06-17T07:12:56.462Z",
+    "document_hash": "7dab890b084530c1373274e360e8b4d567deaa83f014b71c308beb0d423bd774",
+    "merkle_root": "3e8f874a16122879fd9ae5df454b8b2eba435eef36707c7804e512de63b21300",
+    "prev_document_hash": "ce798c88aaec7bfd0e4bec077fdcb64b76ed8cc4bebf5d057cf8acf22b636eda",
+    "endpoints": null
+  },
+  "governance": {
+    "roles": [
+      {
+        "role": "SYSTEM_ADMIN",
+        "display_name": "System Administrators",
+        "addresses": [
+          "0x3f1707FDAF87eE42F9D53fE0Af2Fd96995a80059",
+          "0x9140c30772D963fe04f64D2c8d2454CF67A9Ab48",
+          "0x7C9f957De53D154320b2D0Bb4547B094FE372e47"
+        ],
+        "quorum": 2,
+        "features": {}
+      }
+    ]
+  },
+  "ceremony_config": {
+    "allowed_protocols": [
+      "CGGMP21",
+      "FROST"
+    ],
+    "allowed_curves": [
+      "Secp256k1",
+      "Ed25519"
+    ]
+  },
+  "trusted_infrastructure": {
+    "market_oracle_pubkey": [
+      "e133ff535cce7ec19f137c1f2c1ddaa0c87dc3217d151e87e5d91643135fb235"
+    ],
+    "trusted_binary_hashes": []
+  },
+  "nodes": [
+    {
+      "node_id": "1f855bc2d6fcae118b419aa6becd9233bdcf625ab0c87129f404f683402db75a",
+      "ik_pub": "d0c347c2503e2463b41a3fb3d4df7762e2a293b5edae9fdae74da333e8109d79",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778797681
+    },
+    {
+      "node_id": "3bd946ebd866cd82f82634ee7c2346daa4b6a854a3ae20a9bfa0e0ad8a8478f6",
+      "ik_pub": "d3abf5fd8b5ba7349182c48228ea59ed3f5877f726f83764c5cd8afe87b84dd8",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778797674
+    },
+    {
+      "node_id": "69ad33f59cb736139495993b2a183e19e77cba088ffcb1331b7ffb76b8c01f81",
+      "ik_pub": "69dd7bdb0304b1974007caa28453051de5e1f921368f01546f20449c43cd1adc",
+      "role": "PROVIDER_COSIGNER",
+      "status": "ACTIVE",
+      "enrolled_at": 1778797689
+    }
+  ],
+  "signatures": [
+    {
+      "role": "SYSTEM_ADMIN",
+      "signer": "0x9140c30772d963fe04f64d2c8d2454cf67a9ab48",
+      "signature": "0x6aa497c759ceae1c28bbb5a9285e55462cb45b934481bfc8a1dbc0881364fb5d3f7141bc2fa811fa414d47f645da2a79f24bcc74959964c1f3b4f1a62df19cb01c"
+    },
+    {
+      "role": "SYSTEM_ADMIN",
+      "signer": "0x3f1707fdaf87ee42f9d53fe0af2fd96995a80059",
+      "signature": "0xef09a3ddfcd93a28c6cf5be0bafeae2df1700697d9f95c9b1e6ae5f555d0d59f7a3c500f1c0461c749a909c8465e8885373bec55be1b4f4f476211b223622b501b"
+    }
+  ]
+}
