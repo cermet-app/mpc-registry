@@ -4,7 +4,7 @@ export class ProposeInfrastructureDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @Matches(/^0x[0-9a-fA-F]{40}$/, { each: true, message: 'market_oracle_pubkey entries must be valid Ethereum addresses' })
+  @Matches(/^[0-9a-fA-F]{64}$/, { each: true, message: 'market_oracle_pubkey entries must be 32-byte hex public keys (64 hex chars, no 0x prefix)' })
   market_oracle_pubkey?: string[]
 
   @IsOptional()

@@ -203,7 +203,7 @@
           Configure trusted infrastructure addresses and binary hashes.
         </p>
         <div id="infra-oracle-inputs"></div>
-        <button class="secondary" onclick="addInfraOracleInput()">+ Add Oracle Address</button>
+        <button class="secondary" onclick="addInfraOracleInput()">+ Add Oracle Pubkey</button>
         <div id="infra-hash-inputs"></div>
         <button class="secondary" onclick="addInfraHashInput()">+ Add Hash</button>
         <button class="purple" onclick="proposeInfrastructure()">Propose Infrastructure</button>
@@ -515,7 +515,7 @@
       let html = ''
       const oracles = Array.isArray(infra.market_oracle_pubkey) ? infra.market_oracle_pubkey : []
       if (oracles.length) {
-        html += `<div style="font-size:0.8rem;">Market Oracle Addresses (${oracles.length}):</div>`
+        html += `<div style="font-size:0.8rem;">Market Oracle Pubkeys (${oracles.length}):</div>`
         html += oracles.map(a =>
           `<div class="mono" style="font-size:0.75rem; padding-left:1rem;">${a}</div>`
         ).join('')
@@ -637,7 +637,7 @@
       oracles.forEach((a, i) => {
         const div = document.createElement('div')
         div.className = 'form-group'
-        div.innerHTML = `<label>Market Oracle Address ${i}</label><input class="infra-oracle-input" placeholder="0x..." value="${a}">`
+        div.innerHTML = `<label>Market Oracle Pubkey ${i}</label><input class="infra-oracle-input" placeholder="64 hex chars (no 0x)" value="${a}">`
         oracleContainer.appendChild(div)
       })
       const hashContainer = document.getElementById('infra-hash-inputs')
@@ -768,7 +768,7 @@
       oracles.forEach((a, i) => {
         const div = document.createElement('div')
         div.className = 'form-group'
-        div.innerHTML = `<label>Market Oracle Address ${i}</label><input class="infra-oracle-input" placeholder="0x..." value="${a}">`
+        div.innerHTML = `<label>Market Oracle Pubkey ${i}</label><input class="infra-oracle-input" placeholder="64 hex chars (no 0x)" value="${a}">`
         oracleContainer.appendChild(div)
       })
       const hashContainer = document.getElementById('infra-hash-inputs')
@@ -1157,7 +1157,7 @@
       const count = container.querySelectorAll('.infra-oracle-input').length
       const div = document.createElement('div')
       div.className = 'form-group'
-      div.innerHTML = `<label>Market Oracle Address ${count}</label><input class="infra-oracle-input" placeholder="0x...">`
+      div.innerHTML = `<label>Market Oracle Pubkey ${count}</label><input class="infra-oracle-input" placeholder="64 hex chars (no 0x)">`
       container.appendChild(div)
     }
 

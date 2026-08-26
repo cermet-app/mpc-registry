@@ -111,6 +111,7 @@ npm run start:dev    # start the server
 10. Endpoints -- URL validation
 11. Trusted infrastructure -- `market_oracle_pubkey[]` entries valid, binary hashes integrity
 
+
 ## Read the testing guide
 
 ```bash

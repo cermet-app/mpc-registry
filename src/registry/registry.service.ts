@@ -258,11 +258,11 @@ export class RegistryService implements OnModuleInit {
     // Validate hex address formats if provided
     if (body.market_oracle_pubkey !== undefined) {
       if (!Array.isArray(body.market_oracle_pubkey)) {
-        throw new BadRequestException('market_oracle_pubkey must be an array of Ethereum addresses')
+        throw new BadRequestException('market_oracle_pubkey must be an array of 32-byte hex public keys')
       }
-      for (const addr of body.market_oracle_pubkey) {
-        if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
-          throw new BadRequestException(`Invalid market_oracle_pubkey entry: ${addr} (must be 0x + 40 hex chars)`)
+      for (const pk of body.market_oracle_pubkey) {
+        if (!/^[0-9a-f]{64}$/i.test(pk)) {
+          throw new BadRequestException(`Invalid market_oracle_pubkey entry: ${pk} (must be 32 bytes / 64 hex chars, no 0x prefix)`)
         }
       }
     }
@@ -615,12 +615,12 @@ export class RegistryService implements OnModuleInit {
       let tiValid = true
       if (ti.market_oracle_pubkey !== undefined && ti.market_oracle_pubkey !== null) {
         if (!Array.isArray(ti.market_oracle_pubkey)) {
-          fail('trustedInfrastructure', 'market_oracle_pubkey must be an array of Ethereum addresses')
+          fail('trustedInfrastructure', 'market_oracle_pubkey must be an array of 32-byte hex public keys')
           tiValid = false
         } else {
-          const badAddr = ti.market_oracle_pubkey.find((a: string) => !/^0x[0-9a-fA-F]{40}$/.test(a))
-          if (badAddr) {
-            fail('trustedInfrastructure', `Invalid market_oracle_pubkey entry: ${badAddr}`)
+          const badKey = ti.market_oracle_pubkey.find((pk: string) => !/^[0-9a-f]{64}$/i.test(pk))
+          if (badKey) {
+            fail('trustedInfrastructure', `Invalid market_oracle_pubkey entry: ${badKey} (must be 64 hex chars)`)
             tiValid = false
           }
         }

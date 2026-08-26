@@ -102,8 +102,9 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
   // ── SECTION 4: Trusted Infrastructure ─────────────────────────────────
   // Addresses and hashes of trusted system components.
   "trusted_infrastructure": {
-    "market_oracle_pubkey": [                          // Ethereum addresses of approved price oracles (may be empty)
-      "0x5340CCBF7D4f8B9aB1c2D3E4F5A6B7c8D9e0F1A2"
+    "market_oracle_pubkey": [                          // 32-byte hex pubkeys of approved price oracles (64 hex chars, no 0x; may be empty)
+      "95aa86a98d90f6d01407219eb951890c465320015cd2f2f8a23df6671e8fbb68"
+
     ],
     "trusted_binary_hashes": [                         // SHA-256 hashes of approved node binaries
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -198,11 +199,14 @@ if (!doc.ceremony_config.allowed_curves.includes(selectedCurve)) {
 ### 4.5 — Verify Trusted Infrastructure
 
 ```typescript
-// Before trusting a price oracle response, check it was signed by an approved oracle:
-const approvedOracles = doc.trusted_infrastructure.market_oracle_pubkey
-if (approvedOracles.length > 0 && !approvedOracles.includes(oracleSigner)) {
-  throw new Error(`Oracle ${oracleSigner} not in approved list`)
+// Before trusting a price oracle response, verify it was signed by an approved oracle.
+// market_oracle_pubkey entries are 32-byte hex pubkeys (e.g. Ed25519). Verify the
+// oracle's signature over the price payload against one of these pubkeys.
+const approvedOracles = doc.trusted_infrastructure.market_oracle_pubkey  // string[] of 64-hex-char pubkeys
+if (approvedOracles.length > 0 && !approvedOracles.includes(oraclePubkey)) {
+  throw new Error(`Oracle pubkey ${oraclePubkey} not in approved list`)
 }
+// Then verify the oracle signature with that pubkey (Ed25519/etc) before trusting the price.
 
 // Before accepting a binary update:
 if (doc.trusted_infrastructure.trusted_binary_hashes.length > 0) {
@@ -359,7 +363,7 @@ Binary Merkle tree over sorted nodes:
 | Node role | `node.role` (USER_COSIGNER, PROVIDER_COSIGNER, RECOVERY_GUARDIAN) |
 | Allowed protocols | `ceremony_config.allowed_protocols` |
 | Allowed curves | `ceremony_config.allowed_curves` |
-| Approved oracle addresses | `trusted_infrastructure.market_oracle_pubkey` (string[]) |
+| Approved oracle pubkeys | `trusted_infrastructure.market_oracle_pubkey` (string[], each 64 hex chars / 32 bytes) |
 | Approved binaries | `trusted_infrastructure.trusted_binary_hashes` |
 | Governance roles | `governance.roles` |
 | Fetch URL | `registry_metadata.endpoints.primary` |

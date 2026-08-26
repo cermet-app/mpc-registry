@@ -22,7 +22,7 @@ export const CONFIG = {
 
   // ── Registry identity ─────────────────────────────────────────────────────
   REGISTRY_ID:      optional('REGISTRY_ID', 'dev-custody-v1'),
-  EXPIRY_SECONDS:   parseInt(optional('EXPIRY_SECONDS', String(30 * 24 * 3600))),
+  EXPIRY_SECONDS:   parseInt(optional('EXPIRY_SECONDS', String(9 * 30 * 24 * 3600))),
 
   // ── Genesis role addresses (bootstrap / trust root) ─────────────────────
   // ADMIN_ADDRESS_* → SYSTEM_ADMIN role (required)

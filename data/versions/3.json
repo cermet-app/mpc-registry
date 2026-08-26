@@ -1,13 +1,13 @@
 {
   "registry_metadata": {
     "registry_id": "custody-wallet",
-    "version": 10,
-    "issued_at": 1787773148,
-    "expires_at": 1811101148,
-    "updated_at": "2026-08-26T19:39:08.029Z",
-    "document_hash": "8edcec7be88733b0f71fc3c2dd8e2f0402b0741b2d3db81f9f36cbd082ad9d1f",
+    "version": 3,
+    "issued_at": 1780220784,
+    "expires_at": 1780825584,
+    "updated_at": "2026-05-31T09:46:24.272Z",
+    "document_hash": "28ac3b7101f3fc05d5dfd87a8dbff1351fa953ed0493e24ece6cffa64f6d3ca0",
     "merkle_root": "3e8f874a16122879fd9ae5df454b8b2eba435eef36707c7804e512de63b21300",
-    "prev_document_hash": "17fa67bb285ca337c57ddafa8d2e542ae727e51c70ea339d4b275d9062df18b0",
+    "prev_document_hash": "50779c86633e1c83c258cd2f6a754719c9e972d9fc9807d6c9ee3bf6d404cc1f",
     "endpoints": null
   },
   "governance": {
@@ -37,7 +37,7 @@
   },
   "trusted_infrastructure": {
     "market_oracle_pubkey": [
-      "8bef8595ae6b6de04e7e917f230509f0cf692bb80cf840aaf01e2d11a19dad79"
+      "0x9140c30772D963fe04f64D2c8d2454CF67A9Ab48"
     ],
     "trusted_binary_hashes": []
   },
@@ -67,18 +67,13 @@
   "signatures": [
     {
       "role": "SYSTEM_ADMIN",
-      "signer": "0x9140c30772d963fe04f64d2c8d2454cf67a9ab48",
-      "signature": "0xa7e92eff14ddeaa646f0856be7efbc65b899a74ded582d3b98be86367b9dfb0f7774034ee5c3e1d76adc4744411163c81c20944aa250ef15ca16ce1f753733e71b"
-    },
-    {
-      "role": "SYSTEM_ADMIN",
       "signer": "0x3f1707fdaf87ee42f9d53fe0af2fd96995a80059",
-      "signature": "0x2efadb5b58b30c6e0ab23d6436670f6da5c93ee1c94fa5e3f8b8e6e84684aef77ababcd39812e396f126dd273647281e1a8828b567f448d2be11520833c25fe81c"
+      "signature": "0x0ad78403f6cf466b2af237834e49c12e373b4ba274886ab3273a5860a9989be76e37ae21030f3ed3aae0a6b6c5c10b3d4661852169e54c52f4aa86c786bbe94a1c"
     },
     {
       "role": "SYSTEM_ADMIN",
-      "signer": "0x7c9f957de53d154320b2d0bb4547b094fe372e47",
-      "signature": "0x66d0b42ad3fe608490c5e3ae7b3ec0113258a96867468c41baa51fe82895ddd72c2ae58bd6e1ced1d5b4e54eddc467dc15a399c64c7118c2aa2a9272e1c0f05d1c"
+      "signer": "0x9140c30772d963fe04f64d2c8d2454cf67a9ab48",
+      "signature": "0x83a72d85b4e9b57f5bc302cf85ded670d323940568a3631df841e1fe6d02fb9d7a52ae9d8b8e1141a879dc6259886f30c745b03d050682f7ec18c3d7f2e224741c"
     }
   ]
 }
