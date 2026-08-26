@@ -109,7 +109,8 @@ npm run start:dev    # start the server
 8. Per-role quorum -- ALL roles meet their quorum
 9. Ceremony config -- `allowed_curves`/`allowed_protocols` non-empty
 10. Endpoints -- URL validation
-11. Trusted infrastructure -- `market_oracle_pubkey[]` entries are 32-byte hex pubkeys (64 hex chars), binary hashes integrity
+11. Trusted infrastructure -- `market_oracle_pubkey[]` entries valid, binary hashes integrity
+
 
 ## Read the testing guide
 

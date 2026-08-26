@@ -104,6 +104,7 @@ https://raw.githubusercontent.com/zozzozm/trusted-registery/refs/heads/main/data
   "trusted_infrastructure": {
     "market_oracle_pubkey": [                          // 32-byte hex pubkeys of approved price oracles (64 hex chars, no 0x; may be empty)
       "95aa86a98d90f6d01407219eb951890c465320015cd2f2f8a23df6671e8fbb68"
+
     ],
     "trusted_binary_hashes": [                         // SHA-256 hashes of approved node binaries
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
